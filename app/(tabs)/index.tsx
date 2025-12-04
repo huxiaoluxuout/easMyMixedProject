@@ -1,9 +1,12 @@
-import { StyleSheet } from 'react-native';
-
-import VisionCamera from '@/components/VisionCamera';
+import {  StyleSheet, Text, View } from 'react-native';
+import MyImage from "@/components/MyImage";
 export default function HomeScreen() {
   return (
-    <VisionCamera />
+      <View>
+        <Text>App</Text>
+        <MyImage></MyImage>
+        <Text>App</Text>
+      </View>
   );
 }
 
