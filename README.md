@@ -4,17 +4,31 @@ This is an [Expo](https://expo.dev) project created with [`create-expo-app`](htt
 
 ## Get started
 
-1. Install dependencies
+1. 安装依赖
 
    ```bash
    npm install
    ```
 
-2. Start the app
+2. 预生成原生代码：这会根据你的项目生成 android 和 ios 原生目录。
 
    ```bash
-   npx expo start
+   npx expo prebuild 
    ```
+
+3. 编译并安装到设备
+
+   ```bash
+   npx expo run:android
+   ```
+   ```bash
+   npx expo run:ios
+   ```
+
+
+
+
+ 
 
 In the output, you'll find options to open the app in a
 
