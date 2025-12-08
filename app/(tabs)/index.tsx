@@ -1,10 +1,11 @@
-import {  StyleSheet, Text, View } from 'react-native';
-import MyImage from "@/components/MyImage";
+import MyBle from "@/components/MyBle";
+import { StyleSheet, Text, View } from 'react-native';
 export default function HomeScreen() {
   return (
       <View>
         <Text>App</Text>
-        <MyImage></MyImage>
+        {/* <MyImage></MyImage> */}
+        <MyBle></MyBle>
         <Text>App</Text>
       </View>
   );

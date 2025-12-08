@@ -27,8 +27,16 @@
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
-        "android.permission.MANAGE_EXTERNAL_STORAGE"
+        "android.permission.MANAGE_EXTERNAL_STORAGE",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_SCAN",
+        "android.permission.BLUETOOTH_CONNECT",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
+      "usesPermissionFlags": {
+        "android.permission.BLUETOOTH_SCAN": ["neverForLocation"]
+      },
       "package": "com.xiaoluxiha.MyMixedProject"
     },
     "web": {
@@ -49,7 +57,14 @@
           }
         }
       ],
-      "react-native-vision-camera"
+      "react-native-vision-camera",
+      [
+        "react-native-ble-plx",
+        {
+          "isBackgroundEnabled": false,
+          "isLocationEnabled": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
