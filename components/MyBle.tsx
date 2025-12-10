@@ -104,7 +104,7 @@ export default function MyBle() {
                     const deviceId = scannedDevice.id || '未知ID';
                     console.log('发现设备:', deviceName, deviceId);
 
-                    if (scannedDevice.name?.includes('LT5009NEW')) {
+                    if (scannedDevice.name?.includes('Scent-01639F')) {
                         console.log('找到目标设备:', deviceName, deviceId);
                         cleanupScan();
                         // 在这里可以触发连接设备的函数
@@ -133,7 +133,7 @@ export default function MyBle() {
                 console.log('Characteristics:', Characteristics);
 
                 // 获取特定服务的所有特征
-                const targetServiceUUID = "646687FB-033F-9393-6CA2-0E9401ADEB32"; // 例如 "0000180f-0000-1000-8000-00805f9b34fb"
+                const targetServiceUUID = "0000FFF0-0000-1000-8000-00805F9B34FB";
                 const characteristics = await connectedDevice.characteristicsForService(targetServiceUUID);
 
                 if (characteristics.length === 0) {
