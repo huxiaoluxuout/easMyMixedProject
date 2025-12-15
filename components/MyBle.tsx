@@ -1,5 +1,5 @@
-import {useEffect} from 'react';
-import {PermissionsAndroid, Platform} from 'react-native';
+import {useEffect,useState} from 'react';
+import {PermissionsAndroid, Platform, View, Button, StyleSheet} from 'react-native';
 import {Characteristic, Device} from 'react-native-ble-plx';
 import {bleManager} from '../hooks/use-ble-manager';
 
@@ -49,6 +49,23 @@ async function requestAndroidPermissions() {
 
 // 创建可导出的函数组件
 export default function MyBle() {
+
+    const [deviceId,setDeviceId] = useState('')
+
+    function onPressLearnMore(hexData: string ) {
+        console.log('deviceId',deviceId)
+        // const hexData = 'AA554257A1014A55AA';
+        const base64DataToWrite = hexToBase64(hexData);
+        console.log('Base64数据:', base64DataToWrite); // 输出应为：qlVCV6EBSpWq
+        bleManager.writeCharacteristicWithResponseForDevice(
+            deviceId,
+            '0000FFF0-0000-1000-8000-00805F9B34FB',
+            '0000FFF2-0000-1000-8000-00805F9B34FB',
+            base64DataToWrite // 传入Base64字符串
+        )
+
+    }
+
     // 在组件内部使用useEffect监听蓝牙状态
     useEffect(() => {
         let isScanning = false;
@@ -104,7 +121,8 @@ export default function MyBle() {
                     const deviceId = scannedDevice.id || '未知ID';
                     console.log('发现设备:', deviceName, deviceId);
 
-                    if (scannedDevice.name?.includes('Scent-01639F')) {
+                    // if (scannedDevice.name?.includes('LT5009NEW')) {
+                    if (scannedDevice.name?.includes('Scent_d60000')) {
                         console.log('找到目标设备:', deviceName, deviceId);
                         cleanupScan();
                         // 在这里可以触发连接设备的函数
@@ -124,6 +142,7 @@ export default function MyBle() {
                 console.log('正在连接设备:', device.name, device.id);
                 const connectedDevice = await bleManager.connectToDevice(device.id);
                 console.log('设备连接成功:', connectedDevice.name, connectedDevice.id);
+                setDeviceId(device.id);
                 // 添加连接状态监听
                 connectedDevice.onDisconnected((error, device) => {
                     console.log('设备连接断开', error ? `原因: ${error.message}` : '');
@@ -133,6 +152,7 @@ export default function MyBle() {
                 console.log('Characteristics:', Characteristics);
 
                 // 获取特定服务的所有特征
+                // const targetServiceUUID = "646687FB-033F-9393-6CA2-0E9401ADEB32";
                 const targetServiceUUID = "0000FFF0-0000-1000-8000-00805F9B34FB";
                 const characteristics = await connectedDevice.characteristicsForService(targetServiceUUID);
 
@@ -156,12 +176,20 @@ export default function MyBle() {
                             console.log('执行读取操作...');
                             characteristic.read().then(value => {
                                 console.log('读取结果:', value);
+                                // @ts-ignore
+                                console.log('读取结果-十六进制:', base64ToHex(value.value))
+
                             })
                         }
                         if (characteristic.isNotifiable) {
                             characteristic.monitor((error, char) => {
                                 if (error) console.error('监听错误:', error);
-                                else console.log('收到通知:', char);
+                                else {
+                                    console.log('收到通知:', char)
+                                    // @ts-ignore
+                                    console.log('十六进制:', base64ToHex(char.value))
+                                    // 收到通知: {"deviceID": "D6:00:00:11:07:26", "id": 14, "isIndicatable": false, "isNotifiable": true, "isNotifying": true, "isReadable": false, "isWritableWithResponse": false, "isWritableWithoutResponse": false, "serviceID": 10, "serviceUUID": "0000fff0-0000-1000-8000-00805f9b34fb", "uuid": "0000fff5-0000-1000-8000-00805f9b34fb", "value": "qlVCU6HxvlWq"}
+                                }
                             });
                         }
                     });
@@ -172,6 +200,7 @@ export default function MyBle() {
 
                     console.log(`\n可读特征: ${readableChars.length} 个`);
                     console.log(`可通知特征: ${notifiableChars.length} 个`);
+
                 }
 
             } catch (error) {
@@ -227,6 +256,104 @@ export default function MyBle() {
         };
     }, []);
 
+
+    return (<>
+
+        <View style={styles.button}>
+
+            <View style={styles.button}>
+                <Button
+                    onPress={() => onPressLearnMore('AA554257A1014A55AA')}
+                    title="开机"
+                />
+            </View>
+            <View style={styles.button}>
+                <Button
+                    onPress={() => onPressLearnMore('AA 55 42 57 A1 00 4B 55 AA')}
+                    title="关机"
+                />
+            </View> <View style={styles.button}>
+                <Button
+                    onPress={() => onPressLearnMore('AA 55 42 57 A8 01 00 08 00 07 68 07 68 7F 01 00 08 00 07 68 07 68 00 01 00 08 00 07 68 07 68 00 01 00 08 00 07 68 07 68 00 01 00 08 00 07 68 07 68 00 34 55 AA')}
+                    title="写工作参数"
+                />
+            </View>
+
+        </View>
+
+    </>);
     // 这个组件可以返回null，因为它主要用于蓝牙功能的初始化
-    return null;
+
+    // return null;
 }
+
+const styles = StyleSheet.create({
+    titleContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    stepContainer: {
+        gap: 8,
+        marginBottom: 8,
+    },
+    reactLogo: {
+        height: 178,
+        width: 290,
+        bottom: 0,
+        left: 0,
+        position: 'absolute',
+    },
+    button: {
+        marginTop: 40,
+        marginBottom: 40,
+    }
+});
+
+// 将十六进制字符串转换为 Base64 字符串
+function hexToBase64(hexString: string) {
+    // 移除可能存在的空格
+    hexString = hexString.replace(/\s/g, '');
+    // 确保是偶数长度
+    if (hexString.length % 2 !== 0) {
+        throw new Error('Invalid hex string.');
+    }
+    const bytes = [];
+    for (let i = 0; i < hexString.length; i += 2) {
+        bytes.push(parseInt(hexString.substr(i, 2), 16));
+    }
+    const byteArray = new Uint8Array(bytes);
+    // 对于 React Native 环境，可能需要使用 btoa 或 Buffer 的 polyfill
+    // 这里使用 btoa，注意长字符串处理
+    // @ts-ignore
+    const binaryString = String.fromCharCode.apply(null, byteArray);
+    return btoa(binaryString);
+}
+
+// 你的数据（去掉空格）
+/*const hexData = 'AA554257A1014A55AA';
+const base64DataToWrite = hexToBase64(hexData);
+console.log('Base64数据:', base64DataToWrite); // 输出应为：qlVCV6EBSpWq*/
+
+
+function base64ToHex(base64: string) {
+    // 1. 将Base64字符串解码为二进制字符串
+    const binaryString = atob(base64);
+
+    // 2. 将每个字符的字符码转为十六进制
+    let hex = '';
+    for (let i = 0; i < binaryString.length; i++) {
+        const byte = binaryString.charCodeAt(i);
+        // 确保是两位十六进制，不足则补0
+        hex += byte.toString(16).padStart(2, '0');
+    }
+
+    // 3. 返回十六进制字符串（可选项：转换为大写，每两个字符加空格）
+    return hex.toUpperCase(); // 结果: "123456"
+    // 或者 return hex.toUpperCase().replace(/(.{2})/g, '$1 ').trim(); // 结果: "12 34 56"
+}
+
+// 使用示例
+const base64Str = 'EjRW';
+const hexResult = base64ToHex(base64Str);
+console.log('使用示例', hexResult); // 输出: 123456
