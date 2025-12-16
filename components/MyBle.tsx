@@ -2,6 +2,7 @@ import {useEffect,useState} from 'react';
 import {PermissionsAndroid, Platform, View, Button, StyleSheet} from 'react-native';
 import {Characteristic, Device} from 'react-native-ble-plx';
 import {bleManager} from '../hooks/use-ble-manager';
+import {BLEPacketWriter, chunkHexToBase64} from "@/hooks/chunkHexToBase64";
 
 // Android动态权限申请
 async function requestAndroidPermissions() {
@@ -52,7 +53,14 @@ export default function MyBle() {
 
     const [deviceId,setDeviceId] = useState('')
 
-    function onPressLearnMore(hexData: string ) {
+    const writer = new BLEPacketWriter(
+        deviceId,
+        '0000FFF0-0000-1000-8000-00805F9B34FB',
+        '0000FFF2-0000-1000-8000-00805F9B34FB',
+        bleManager,
+        { packetSize: 20, delay: 50 }
+    );
+      function onPressLearnMore(hexData: string ) {
         console.log('deviceId',deviceId)
         // const hexData = 'AA554257A1014A55AA';
         const base64DataToWrite = hexToBase64(hexData);
@@ -63,6 +71,16 @@ export default function MyBle() {
             '0000FFF2-0000-1000-8000-00805F9B34FB',
             base64DataToWrite // 传入Base64字符串
         )
+        /*try {
+            // @ts-ignore
+            await writer.writeLargeData(hexData, (current, total) => {
+                console.log(`进度: ${Math.round((current / total) * 100)}%`);
+            });
+            console.log('数据发送完成！');
+        } catch (error) {
+            console.error('发送失败:', error);
+        }
+*/
 
     }
 
@@ -71,7 +89,7 @@ export default function MyBle() {
         let isScanning = false;
         let hasPermission = false;
         let bluetoothPoweredOn = false;
-
+        // console.log(chunkHexToBase64('AA 55 42 57 A8 01 00 08 00 07 68 07 68 7F 01 00 08 00 07 68 07 68 00 01 00 08 00 07 68 07 68 00 01 00 08 00 07 68 07 68 00 01 00 08 00 07 68 07 68 00 34 55 AA'));
         // 检查是否可以开始扫描的函数
         const checkAndStartScan = () => {
             if (hasPermission && bluetoothPoweredOn && !isScanning) {
@@ -259,7 +277,7 @@ export default function MyBle() {
 
     return (<>
 
-        <View style={styles.button}>
+        <View style={styles.screen}>
 
             <View style={styles.button}>
                 <Button
@@ -272,37 +290,31 @@ export default function MyBle() {
                     onPress={() => onPressLearnMore('AA 55 42 57 A1 00 4B 55 AA')}
                     title="关机"
                 />
-            </View> <View style={styles.button}>
+            </View>
+            <View style={styles.button}>
                 <Button
                     onPress={() => onPressLearnMore('AA 55 42 57 A8 01 00 08 00 07 68 07 68 7F 01 00 08 00 07 68 07 68 00 01 00 08 00 07 68 07 68 00 01 00 08 00 07 68 07 68 00 01 00 08 00 07 68 07 68 00 34 55 AA')}
                     title="写工作参数"
                 />
             </View>
-
+            <View style={styles.button}>
+                <Button
+                    onPress={() => onPressLearnMore('AA 55 42 52 A1 4E 55 AA')}
+                    title="开关机状态"
+                />
+            </View>
         </View>
 
     </>);
     // 这个组件可以返回null，因为它主要用于蓝牙功能的初始化
-
     // return null;
 }
 
 const styles = StyleSheet.create({
-    titleContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 8,
-    },
-    stepContainer: {
-        gap: 8,
-        marginBottom: 8,
-    },
-    reactLogo: {
-        height: 178,
-        width: 290,
-        bottom: 0,
-        left: 0,
-        position: 'absolute',
+
+    screen: {
+        marginTop: 40,
+        marginBottom: 40,
     },
     button: {
         marginTop: 40,
