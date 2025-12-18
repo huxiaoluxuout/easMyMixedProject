@@ -35,7 +35,9 @@
         "android.permission.ACCESS_FINE_LOCATION"
       ],
       "usesPermissionFlags": {
-        "android.permission.BLUETOOTH_SCAN": ["neverForLocation"]
+        "android.permission.BLUETOOTH_SCAN": [
+          "neverForLocation"
+        ]
       },
       "package": "com.xiaoluxiha.MyMixedProject"
     },
@@ -64,7 +66,8 @@
           "isBackgroundEnabled": false,
           "isLocationEnabled": true
         }
-      ]
+      ],
+      "react-native-wifi-reborn"
     ],
     "experiments": {
       "typedRoutes": true,

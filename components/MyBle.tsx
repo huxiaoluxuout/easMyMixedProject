@@ -1,7 +1,7 @@
 import {useEffect,useState} from 'react';
 import {PermissionsAndroid, Platform, View, Button, StyleSheet} from 'react-native';
 import {Characteristic, Device} from 'react-native-ble-plx';
-import {bleManager} from '../hooks/use-ble-manager';
+import {bleManager} from '@/hooks/use-ble-manager';
 import {BLEPacketWriter, chunkHexToBase64} from "@/hooks/chunkHexToBase64";
 
 // Android动态权限申请

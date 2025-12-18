@@ -1,5 +1,7 @@
 import MyBle from "@/components/MyBle";
 import {Alert, Button, StyleSheet, Text, View} from 'react-native';
+import MyWifi from "@/components/MyWiFi";
+import WiFiManager from "@/components/MyWiFi2";
 export default function HomeScreen() {
 
 
@@ -7,8 +9,9 @@ export default function HomeScreen() {
       <View>
         <Text>App</Text>
         {/* <MyImage></MyImage> */}
-        <MyBle></MyBle>
-
+        {/*<MyBle></MyBle>*/}
+        <MyWifi></MyWifi>
+        {/*<WiFiManager></WiFiManager>*/}
         <Text>App</Text>
       </View>
   );
