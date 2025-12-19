@@ -317,8 +317,8 @@ const styles = StyleSheet.create({
         marginBottom: 40,
     },
     button: {
-        marginTop: 40,
-        marginBottom: 40,
+        marginTop: 20,
+        marginBottom: 20,
     }
 });
 
