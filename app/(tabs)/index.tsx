@@ -14,9 +14,9 @@ export default function HomeScreen() {
       <View style={styles.title_box}>
         <Text style={styles.title}>App</Text>
 
-         {/*<MyImage></MyImage>*/}
+         <MyImage></MyImage>
 
-        <MyBle></MyBle>
+        {/*<MyBle></MyBle>*/}
         {/*<MyWifi></MyWifi>*/}
 
 
