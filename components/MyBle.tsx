@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react';
-import {PermissionsAndroid, Platform, View, Button, StyleSheet} from 'react-native';
+import {PermissionsAndroid, Platform, View, Button, StyleSheet,FlatList,Text,TextInput, TouchableOpacity} from 'react-native';
 import {Characteristic, Device} from 'react-native-ble-plx';
 import {bleManager} from '@/hooks/use-ble-manager';
 import {BLEPacketWriter, chunkHexToBase64} from "@/hooks/chunkHexToBase64";
@@ -52,7 +52,54 @@ async function requestAndroidPermissions() {
 export default function MyBle() {
 
     const [deviceId,setDeviceId] = useState('')
+    const [items, setItems] = useState([]);
+    const [inputText, setInputText] = useState('');
+    const [counter, setCounter] = useState(0);
 
+
+    // 向数组添加数据的函数
+    const addItem = () => {
+        if (inputText.trim()) {
+            const newItem = {
+                id: Date.now().toString(),
+                text: inputText,
+                timestamp: new Date().toLocaleTimeString()
+            };
+            console.log('newItem',newItem)
+            // 向数组开头添加新数据
+            setItems(prevItems => [newItem, ...prevItems]);
+            setInputText(''); // 清空输入框
+        }
+    };
+
+    // 自动添加数据的函数（模拟实时数据）
+    const autoAddItem = () => {
+        const newItem = {
+            id: Date.now().toString(),
+            text: `自动生成的数据 ${counter}`,
+            timestamp: new Date().toLocaleTimeString()
+        };
+
+        // 向数组末尾添加新数据
+        setItems(prevItems => [...prevItems, newItem]);
+        setCounter(prevCounter => prevCounter + 1);
+    };
+
+    // 清空数组
+    const clearArray = () => {
+        setItems([]);
+        setCounter(0);
+    };
+
+
+    // 渲染单个列表项
+    // @ts-ignore
+    const renderItem = ({ item }) => (
+        <View style={styles.itemContainer}>
+            <Text style={styles.itemText}>{item.id}</Text>
+            <Text style={styles.itemTimestamp}>{item.localName}</Text>
+        </View>
+    );
     const writer = new BLEPacketWriter(
         deviceId,
         '0000FFF0-0000-1000-8000-00805F9B34FB',
@@ -139,12 +186,23 @@ export default function MyBle() {
                     const deviceId = scannedDevice.id || '未知ID';
                     console.log('发现设备:', deviceName, deviceId);
 
+                    const nameList = ['LT5009NEW', 'Scent_320200','Scent-01639F'];
                     // if (scannedDevice.name?.includes('LT5009NEW')) {
-                    if (scannedDevice.name?.includes('Scent_d60000')) {
-                        console.log('找到目标设备:', deviceName, deviceId);
-                        cleanupScan();
+                    if (nameList.includes(scannedDevice?.name as string)) {
                         // 在这里可以触发连接设备的函数
-                        connectToDevice(scannedDevice);
+                        // connectToDevice(scannedDevice);
+                        setTimeout(() => {
+                            cleanupScan();
+                            // console.log('找到目标设备:', deviceName, deviceId);
+                            // console.log('scannedDevice',scannedDevice)
+                            // @ts-ignore
+                            // setList(scannedDevice)
+                            // setList(prevItems => [scannedDevice, ...prevItems]);
+                            //     scannedDevice.UId=Date.now().toString()
+                            // setItems(prevItems => [...prevItems, scannedDevice]);
+                            console.log('找到目标设备:', );
+
+                        }, 5000);
                     }
                 });
             } catch (error) {
@@ -279,7 +337,7 @@ export default function MyBle() {
 
         <View style={styles.screen}>
 
-            <View style={styles.button}>
+            {/*<View style={styles.button}>
                 <Button
                     onPress={() => onPressLearnMore('AA554257A1014A55AA')}
                     title="开机"
@@ -302,6 +360,57 @@ export default function MyBle() {
                     onPress={() => onPressLearnMore('AA 55 42 52 A1 4E 55 AA')}
                     title="开关机状态"
                 />
+            </View>*/}
+            <View style={styles.header}>
+                <Text style={styles.title}>数组数据管理</Text>
+                <Text style={styles.countText}>当前数组长度: {items.length}</Text>
+            </View>
+            <View style={styles.inputContainer}>
+                <TextInput
+                    style={styles.input}
+                    placeholder="输入要添加的数据..."
+                    value={inputText}
+                    onChangeText={setInputText}
+                    onSubmitEditing={addItem}
+                    returnKeyType="done"
+                />
+                <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={addItem}
+                    disabled={!inputText.trim()}
+                >
+                    <Text style={styles.addButtonText}>添加</Text>
+                </TouchableOpacity>
+            </View>
+            <View >
+                <TouchableOpacity
+                    style={styles.controlButton}
+                    onPress={autoAddItem}
+                >
+                    <Text style={styles.controlButtonText}>手动添加数据</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                    style={[styles.controlButton, styles.clearButton]}
+                    onPress={clearArray}
+                    disabled={items.length === 0}
+                >
+                    <Text style={styles.controlButtonText}>清空数组</Text>
+                </TouchableOpacity>
+            </View>
+            <View style={styles.listContainer}>
+                <Text style={styles.listTitle}>数据列表：</Text>
+                {items.length === 0 ? (
+                    <Text style={styles.emptyText}>暂无数据，等待自动添加或手动输入...</Text>
+                ) : (
+                    <FlatList
+                        data={items}
+                        renderItem={renderItem}
+                        keyExtractor={item => item.UId}
+                        showsVerticalScrollIndicator={true}
+                        contentContainerStyle={styles.listContent}
+                    />
+                )}
             </View>
         </View>
 
@@ -319,7 +428,114 @@ const styles = StyleSheet.create({
     button: {
         marginTop: 20,
         marginBottom: 20,
-    }
+    },
+    container: {
+        flex: 1,
+        backgroundColor: '#f5f5f5',
+    },
+    header: {
+        backgroundColor: '#2196F3',
+        padding: 20,
+        alignItems: 'center',
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: 'white',
+        marginBottom: 10,
+    },
+    countText: {
+        fontSize: 16,
+        color: 'white',
+    },
+    inputContainer: {
+        flexDirection: 'row',
+        padding: 15,
+        backgroundColor: 'white',
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+    },
+    input: {
+        flex: 1,
+        height: 40,
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 5,
+        paddingHorizontal: 10,
+        marginRight: 10,
+    },
+    addButton: {
+        backgroundColor: '#4CAF50',
+        paddingHorizontal: 20,
+        justifyContent: 'center',
+        borderRadius: 5,
+    },
+    addButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    controls: {
+        flexDirection: 'row',
+        padding: 15,
+        backgroundColor: 'white',
+        borderBottomWidth: 1,
+        borderBottomColor: '#e0e0e0',
+        justifyContent: 'space-between',
+    },
+    controlButton: {
+        backgroundColor: '#2196F3',
+        paddingHorizontal: 15,
+        paddingVertical: 10,
+        borderRadius: 5,
+    },
+    clearButton: {
+        backgroundColor: '#f44336',
+    },
+    controlButtonText: {
+        color: 'white',
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    listContainer: {
+        flex: 1,
+        padding: 15,
+    },
+    listTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 10,
+        color: '#333',
+    },
+    listContent: {
+        paddingBottom: 20,
+    },
+    itemContainer: {
+        backgroundColor: 'white',
+        padding: 15,
+        marginBottom: 10,
+        borderRadius: 8,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    itemText: {
+        fontSize: 16,
+        color: '#333',
+        marginBottom: 5,
+    },
+    itemTimestamp: {
+        fontSize: 12,
+        color: '#666',
+    },
+    emptyText: {
+        textAlign: 'center',
+        color: '#666',
+        fontSize: 16,
+        marginTop: 50,
+    },
 });
 
 // 将十六进制字符串转换为 Base64 字符串
