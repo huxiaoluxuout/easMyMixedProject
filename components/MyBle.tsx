@@ -340,7 +340,40 @@ export default function MyBle() {
     }
 
 
+    async function setBLEMTU() {
+        // 3. 协商MTU（关键步骤！）
+        // 监听设备更新（可能包含MTU信息）
+        bleManager.onStateChange((state) => {
+            console.log(`BLE状态变化: ${state}`);
+        }, true);
+        setTimeout(async () => {
+            const newMTU = await requestBLEMTU(deviceId, 64);
+            console.log(`🎯 协商后MTU: ${JSON.stringify(newMTU)}`);
+        }, 5000);
 
+    }
+
+    /**
+     * 请求更大的MTU值
+     */
+    async function requestBLEMTU(deviceId:string, requestedMTU = 23) {
+        console.log(`📡 请求MTU: ${requestedMTU}`);
+
+        try {
+            // 方法1: 使用requestMTUForDevice（推荐）
+            const actualMTU = await bleManager.requestMTUForDevice(
+                deviceId,
+                requestedMTU
+            );
+
+            console.log(`✅ MTU协商成功: ${JSON.stringify(actualMTU)}`);
+            return actualMTU;
+
+        } catch (error) {
+            console.warn(`⚠️ MTU协商失败: ${error.message}`);
+
+        }
+    }
     // 在组件内部使用useEffect监听蓝牙状态
     useEffect(() => {
         let isScanning = false;
@@ -533,6 +566,12 @@ export default function MyBle() {
                 <Button
                     onPress={() => onPressWrite()}
                     title="写工作参数"
+                />
+            </View>
+            <View style={styles.button}>
+                <Button
+                    onPress={() => setBLEMTU()}
+                    title="协商后MTU"
                 />
             </View>
         </View>
