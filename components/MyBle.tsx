@@ -1,8 +1,8 @@
-import {useEffect,useState} from 'react';
-import {PermissionsAndroid, Platform, View, Button, StyleSheet,FlatList,Text,TextInput, TouchableOpacity} from 'react-native';
+import {useEffect, useState} from 'react';
+import {PermissionsAndroid, Platform, View, Button, StyleSheet, FlatList, Text, TextInput, TouchableOpacity, Pressable} from 'react-native';
 import {Characteristic, Device} from 'react-native-ble-plx';
 import {bleManager} from '@/hooks/use-ble-manager';
-import {BLEPacketWriter, chunkHexToBase64} from "@/hooks/chunkHexToBase64";
+import {BLEPacketWriter, BLESender, chunkHexToBase64, verifyChunking} from "@/hooks/chunkHexToBase64";
 
 // Android动态权限申请
 async function requestAndroidPermissions() {
@@ -51,92 +51,301 @@ async function requestAndroidPermissions() {
 // 创建可导出的函数组件
 export default function MyBle() {
 
-    const [deviceId,setDeviceId] = useState('')
+    const [deviceId, setDeviceId] = useState('')
     const [items, setItems] = useState([]);
-    const [inputText, setInputText] = useState('');
-    const [counter, setCounter] = useState(0);
 
+    /*const DATA = [
+        {
+            id: 'bd7acbea-c1b1-46c2-aed5-3ad53abb28ba',
+            title: 'First Item',
+        },
+        {
+            id: '3ac68afc-c605-48d3-a4f8-fbd91aa97f63',
+            title: 'Second Item',
+        },
+        {
+            id: '58694a0f-3da1-471f-bd96-145571e29d72',
+            title: 'Third Item',
+        },
+    ];*/
 
-    // 向数组添加数据的函数
-    const addItem = () => {
-        if (inputText.trim()) {
-            const newItem = {
-                id: Date.now().toString(),
-                text: inputText,
-                timestamp: new Date().toLocaleTimeString()
-            };
-            console.log('newItem',newItem)
-            // 向数组开头添加新数据
-            setItems(prevItems => [newItem, ...prevItems]);
-            setInputText(''); // 清空输入框
+    const connectToDeviceTo = (device: Device) => {
+        console.log('device', device)
+        connectToDevice(device)
+    }
+    // 连接设备的函数
+    const connectToDevice = async (device: Device) => {
+        try {
+
+            console.log('正在连接设备:', device.name, device.id);
+            const connectedDevice = await bleManager.connectToDevice(device.id);
+            console.log('设备连接成功:', connectedDevice.name, connectedDevice.id);
+            setDeviceId(device.id);
+            // 添加连接状态监听
+            connectedDevice.onDisconnected((error, device) => {
+                console.log('设备连接断开', error ? `原因: ${error.message}` : '');
+            });
+            // 可以在这里进行进一步操作，如发现服务/特征等
+            const Characteristics = await connectedDevice.discoverAllServicesAndCharacteristics();
+            console.log('Characteristics:', Characteristics);
+
+            // 获取特定服务的所有特征
+            // const targetServiceUUID = "646687FB-033F-9393-6CA2-0E9401ADEB32";
+            const targetServiceUUID = "0000FFF0-0000-1000-8000-00805F9B34FB";
+            const characteristics = await connectedDevice.characteristicsForService(targetServiceUUID);
+
+            if (characteristics.length === 0) {
+                console.warn(`服务 ${targetServiceUUID} 没有找到任何特征`);
+            } else {
+                console.log(`服务 ${targetServiceUUID} 的特征列表:`);
+
+                // 详细输出每个特征的信息
+                characteristics.forEach((characteristic, index) => {
+                    console.log(`\n特征 ${index + 1}:`);
+                    console.log(`  UUID: ${characteristic.uuid}`);
+                    console.log(`  属性: ${getCharacteristicProperties(characteristic)}`);
+                    console.log(`  可读: ${characteristic.isReadable}`);
+                    console.log(`  可写(需响应): ${characteristic.isWritableWithResponse}`);
+                    console.log(`  可写(无需响应): ${characteristic.isWritableWithoutResponse}`);
+                    console.log(`  可通知: ${characteristic.isNotifiable}`);
+                    console.log(`  可指示: ${characteristic.isIndicatable}`);
+
+                    if (characteristic.isReadable) {
+                        console.log('执行读取操作...');
+                        characteristic.read().then(value => {
+                            console.log('读取结果:', value);
+                            // @ts-ignore
+                            console.log('读取结果-十六进制:', base64ToHex(value.value))
+
+                        })
+                    }
+                    if (characteristic.isNotifiable) {
+                        characteristic.monitor((error, char) => {
+                            if (error) console.error('监听错误:', error);
+                            else {
+                                // console.log('收到通知:', char)
+                                // @ts-ignore
+                                console.log('十六进制:', base64ToHex(char.value))
+                                const now = new Date();
+                                const hours = String(now.getHours()).padStart(2, '0');
+                                const minutes = String(now.getMinutes()).padStart(2, '0');
+                                const seconds = String(now.getSeconds()).padStart(2, '0');
+                                const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
+                                console.log(`时间: ${hours}:${minutes}:${seconds}.${milliseconds}`);
+
+                                // 收到通知: {"deviceID": "D6:00:00:11:07:26", "id": 14, "isIndicatable": false, "isNotifiable": true, "isNotifying": true, "isReadable": false, "isWritableWithResponse": false, "isWritableWithoutResponse": false, "serviceID": 10, "serviceUUID": "0000fff0-0000-1000-8000-00805f9b34fb", "uuid": "0000fff5-0000-1000-8000-00805f9b34fb", "value": "qlVCU6HxvlWq"}
+                            }
+                        });
+                    }
+                });
+
+                // 根据特征属性筛选特定类型的特征
+                const readableChars = characteristics.filter(c => c.isReadable);
+                const notifiableChars = characteristics.filter(c => c.isNotifiable);
+
+                console.log(`\n可读特征: ${readableChars.length} 个`);
+                console.log(`可通知特征: ${notifiableChars.length} 个`);
+
+            }
+
+        } catch (error) {
+            console.error('连接设备失败:', error);
         }
     };
 
-    // 自动添加数据的函数（模拟实时数据）
-    const autoAddItem = () => {
-        const newItem = {
-            id: Date.now().toString(),
-            text: `自动生成的数据 ${counter}`,
-            timestamp: new Date().toLocaleTimeString()
-        };
+    // 辅助函数：获取特征属性描述
+    function getCharacteristicProperties(char: Characteristic) {
+        const props = [];
+        if (char.isReadable) props.push('READ');
+        if (char.isWritableWithResponse) props.push('WRITE_WITH_RESPONSE');
+        if (char.isWritableWithoutResponse) props.push('WRITE_WITHOUT_RESPONSE');
+        if (char.isNotifiable) props.push('NOTIFY');
+        if (char.isIndicatable) props.push('INDICATE');
+        return props.join(' | ');
+    }
 
-        // 向数组末尾添加新数据
-        setItems(prevItems => [...prevItems, newItem]);
-        setCounter(prevCounter => prevCounter + 1);
-    };
+    const Item = ({device}) => (
+        /*     onPressIn={() => console.log('按下开始')}
+         onPressOut={() => console.log('按下结束')}
+         onLongPress={() => console.log('长按')}*/
+        <Pressable
+            onPress={() => {
+                console.log('按下', device.id)
+                connectToDeviceTo(device)
+            }}
+        >
+            {({pressed}) => (
+                <View style={styles.item}>
+                    <Text style={styles.title}>{device.id}</Text>
+                    <Text style={styles.title}>{device.localName}</Text>
+                </View>
+            )}
+        </Pressable>
 
-    // 清空数组
-    const clearArray = () => {
-        setItems([]);
-        setCounter(0);
-    };
 
-
-    // 渲染单个列表项
-    // @ts-ignore
-    const renderItem = ({ item }) => (
-        <View style={styles.itemContainer}>
-            <Text style={styles.itemText}>{item.id}</Text>
-            <Text style={styles.itemTimestamp}>{item.localName}</Text>
-        </View>
     );
-    const writer = new BLEPacketWriter(
-        deviceId,
-        '0000FFF0-0000-1000-8000-00805F9B34FB',
-        '0000FFF2-0000-1000-8000-00805F9B34FB',
-        bleManager,
-        { packetSize: 20, delay: 50 }
-    );
-      function onPressLearnMore(hexData: string ) {
-        console.log('deviceId',deviceId)
+
+    const wSend = [
+        {
+            hexData: 'AA 55 42 52 A1 4E 55 AA',
+            description: '读取设备开关机状态'
+        },
+        {
+            hexData: 'AA 55 42 52 A2 4D 55 AA',
+            description: '有无风扇 有无电量显示'
+        },
+        {
+            hexData: 'AA 55 42 52 AF 01 55 AA',
+            description: '设备锁功能'
+        },
+        {
+            hexData: 'AA 55 42 52 A6 49 55 AA',
+            description: '读取设备电量'
+        },
+        {
+            hexData: 'AA 55 42 52 AA 45 55 AA',
+            description: '设备信息'
+        },
+        {
+            hexData: 'AA 55 42 52 AE 41 55 AA',
+            description: '模式开关指令'
+        }
+    ]
+
+    function onPressLearnMore() {
+        console.log('deviceId', deviceId)
         // const hexData = 'AA554257A1014A55AA';
-        const base64DataToWrite = hexToBase64(hexData);
-        console.log('Base64数据:', base64DataToWrite); // 输出应为：qlVCV6EBSpWq
-        bleManager.writeCharacteristicWithResponseForDevice(
+        // const base64DataToWrite = hexToBase64(hexData);
+        // console.log('Base64数据:', base64DataToWrite); // 输出应为：qlVCV6EBSpWq
+       /* bleManager.writeCharacteristicWithResponseForDevice(
             deviceId,
             '0000FFF0-0000-1000-8000-00805F9B34FB',
             '0000FFF2-0000-1000-8000-00805F9B34FB',
             base64DataToWrite // 传入Base64字符串
-        )
-        /*try {
-            // @ts-ignore
+        )*/
+        wSend.forEach(item => {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
+
+            console.log(`时间：${hours}:${minutes}:${seconds}.${milliseconds}`);
+            const base64DataToWrite = hexToBase64(item.hexData);
+            // console.log('item.hexData', item.hexData, 'description:', item.description)
+            bleManager.writeCharacteristicWithResponseForDevice( deviceId,
+                '0000FFF0-0000-1000-8000-00805F9B34FB',
+                '0000FFF2-0000-1000-8000-00805F9B34FB',base64DataToWrite)
+        })
+
+
+
+
+    }
+
+    // 测试用例
+    async function testChunking(hexData: string) {
+        const testData = hexData;
+
+        console.log('=== 开始测试 ===');
+
+        // 1. 验证数据转换
+        console.log('\n1. 验证数据完整性:');
+        const isValid = verifyChunking(testData, 20);
+        console.log('数据完整性验证:', isValid ? '✅ 通过' : '❌ 失败');
+
+        // 2. 生成分包
+        console.log('\n2. 生成分包数据:');
+        const packets = chunkHexToBase64(testData, 20, false);
+
+        console.log(`\n共 ${packets.length} 个包:`);
+        packets.forEach((packet, index) => {
+            console.log(`包 ${index + 1}: ${packet.substring(0, 30)}...`);
+        });
+
+        // 3. 发送测试
+        console.log('\n3. 发送测试:');
+        return packets;
+    }
+
+
+    /**
+     * 使用示例
+     */
+    async function onPressWrite() {
+        console.log('开始写入工作参数...');
+
+        // 确保设备已连接
+        // 创建发送器
+        const sender = new BLESender(
+            bleManager,
+            deviceId,
+            '0000FFF0-0000-1000-8000-00805F9B34FB',
+            '0000FFF2-0000-1000-8000-00805F9B34FB'
+        );
+        try {
+
+
+            // 你的数据
+            const hexData = 'AA 55 42 57 A8 08 00 16 0A 00 05 00 78 7F 02 00 16 00 00 05 00 A0 73 00 00 00 00 00 05 00 A0 00 00 00 00 00 00 05 00 A0 00 00 00 00 00 00 05 00 A0 00 33 55 AA';
+
+            await testChunking(hexData)
+            // 发送分包数据
+            await sender.sendChunkedData(hexData, {
+                chunkSize: 20,
+                delayMs: 10,  // 增加延迟确保设备能处理
+                withResponse: true,
+                progressCallback: (current:number, total: number) => {
+                    const percent = Math.round((current / total) * 100);
+                    console.log(`进度: ${percent}% (${current}/${total})`);
+                }
+            });
+            const base64DataToWrite = hexToBase64(hexData);
+            bleManager.writeCharacteristicWithResponseForDevice( deviceId,
+                '0000FFF0-0000-1000-8000-00805F9B34FB',
+                '0000FFF2-0000-1000-8000-00805F9B34FB',base64DataToWrite)
+
+          /*  const base64DataToWrite = hexToBase64(hexData);
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
+
+            console.log(`时间：${hours}:${minutes}:${seconds}.${milliseconds}`);
+            bleManager.writeCharacteristicWithResponseForDevice( deviceId,
+                '0000FFF0-0000-1000-8000-00805F9B34FB',
+                '0000FFF2-0000-1000-8000-00805F9B34FB',base64DataToWrite)*/
+          /*  return
+            // 先发送一个测试包
+            console.log('发送测试包...');
+            await writer.writeLargeData('AA 55 42 52 AA 45 55 AA', (current, total) => {
+                console.log(`进度: ${Math.round((current / total) * 100)}%`);
+            });
+
+            // 等待设备响应
+            await writer.delay(50);
+
+            // 发送完整数据
+            console.log('发送完整数据...');
             await writer.writeLargeData(hexData, (current, total) => {
                 console.log(`进度: ${Math.round((current / total) * 100)}%`);
             });
-            console.log('数据发送完成！');
-        } catch (error) {
-            console.error('发送失败:', error);
-        }
-*/
 
+            console.log('✅ 数据发送完成！');*/
+
+        } catch (error) {
+            console.error('❌ 发送失败:', error);
+        }
     }
+
+
 
     // 在组件内部使用useEffect监听蓝牙状态
     useEffect(() => {
         let isScanning = false;
         let hasPermission = false;
         let bluetoothPoweredOn = false;
-        // console.log(chunkHexToBase64('AA 55 42 57 A8 01 00 08 00 07 68 07 68 7F 01 00 08 00 07 68 07 68 00 01 00 08 00 07 68 07 68 00 01 00 08 00 07 68 07 68 00 01 00 08 00 07 68 07 68 00 34 55 AA'));
         // 检查是否可以开始扫描的函数
         const checkAndStartScan = () => {
             if (hasPermission && bluetoothPoweredOn && !isScanning) {
@@ -186,7 +395,7 @@ export default function MyBle() {
                     const deviceId = scannedDevice.id || '未知ID';
                     console.log('发现设备:', deviceName, deviceId);
 
-                    const nameList = ['LT5009NEW', 'Scent_320200','Scent-01639F'];
+                    const nameList = ['LT5009NEW', 'Scent_320200', 'Scent-01639F'];
                     // if (scannedDevice.name?.includes('LT5009NEW')) {
                     if (nameList.includes(scannedDevice?.name as string)) {
                         // 在这里可以触发连接设备的函数
@@ -200,7 +409,33 @@ export default function MyBle() {
                             // setList(prevItems => [scannedDevice, ...prevItems]);
                             //     scannedDevice.UId=Date.now().toString()
                             // setItems(prevItems => [...prevItems, scannedDevice]);
-                            console.log('找到目标设备:', );
+
+                            setItems(prevItems => {
+                                /*// 创建一个 Map，以 ID 为键
+                                const itemsMap = new Map(prevItems.map(item => [item.id, item]));
+
+                                // 添加或更新新设备
+                                itemsMap.set(scannedDevice.id, scannedDevice);
+
+                                // 转换回数组
+                                return Array.from(itemsMap.values());*/
+
+                                // 方法1：使用filter移除相同ID的设备，然后添加新设备
+                                const filteredItems = prevItems.filter(item => item.id !== scannedDevice.id);
+                                prevItems.forEach(item => {
+                                    console.log('xxx-manufacturerData', base64ToHex(item.manufacturerData))
+                                    console.log('yyy-rawScanRecord', base64ToHex(item.rawScanRecord))
+
+                                })
+                                return [...filteredItems, scannedDevice];
+
+                                // 或者方法2：如果已存在则不添加
+                                // const exists = prevItems.some(item => item.id === scannedDevice.id);
+                                // if (exists) return prevItems;
+                                // return [...prevItems, scannedDevice];
+                            });
+                            console.log('找到目标设备:', items);
+
 
                         }, 5000);
                     }
@@ -211,89 +446,8 @@ export default function MyBle() {
             }
         };
 
-        // 连接设备的函数
-        const connectToDevice = async (device: Device) => {
-            try {
+        // ---------------
 
-                console.log('正在连接设备:', device.name, device.id);
-                const connectedDevice = await bleManager.connectToDevice(device.id);
-                console.log('设备连接成功:', connectedDevice.name, connectedDevice.id);
-                setDeviceId(device.id);
-                // 添加连接状态监听
-                connectedDevice.onDisconnected((error, device) => {
-                    console.log('设备连接断开', error ? `原因: ${error.message}` : '');
-                });
-                // 可以在这里进行进一步操作，如发现服务/特征等
-                const Characteristics = await connectedDevice.discoverAllServicesAndCharacteristics();
-                console.log('Characteristics:', Characteristics);
-
-                // 获取特定服务的所有特征
-                // const targetServiceUUID = "646687FB-033F-9393-6CA2-0E9401ADEB32";
-                const targetServiceUUID = "0000FFF0-0000-1000-8000-00805F9B34FB";
-                const characteristics = await connectedDevice.characteristicsForService(targetServiceUUID);
-
-                if (characteristics.length === 0) {
-                    console.warn(`服务 ${targetServiceUUID} 没有找到任何特征`);
-                } else {
-                    console.log(`服务 ${targetServiceUUID} 的特征列表:`);
-
-                    // 详细输出每个特征的信息
-                    characteristics.forEach((characteristic, index) => {
-                        console.log(`\n特征 ${index + 1}:`);
-                        console.log(`  UUID: ${characteristic.uuid}`);
-                        console.log(`  属性: ${getCharacteristicProperties(characteristic)}`);
-                        console.log(`  可读: ${characteristic.isReadable}`);
-                        console.log(`  可写(需响应): ${characteristic.isWritableWithResponse}`);
-                        console.log(`  可写(无需响应): ${characteristic.isWritableWithoutResponse}`);
-                        console.log(`  可通知: ${characteristic.isNotifiable}`);
-                        console.log(`  可指示: ${characteristic.isIndicatable}`);
-
-                        if (characteristic.isReadable) {
-                            console.log('执行读取操作...');
-                            characteristic.read().then(value => {
-                                console.log('读取结果:', value);
-                                // @ts-ignore
-                                console.log('读取结果-十六进制:', base64ToHex(value.value))
-
-                            })
-                        }
-                        if (characteristic.isNotifiable) {
-                            characteristic.monitor((error, char) => {
-                                if (error) console.error('监听错误:', error);
-                                else {
-                                    console.log('收到通知:', char)
-                                    // @ts-ignore
-                                    console.log('十六进制:', base64ToHex(char.value))
-                                    // 收到通知: {"deviceID": "D6:00:00:11:07:26", "id": 14, "isIndicatable": false, "isNotifiable": true, "isNotifying": true, "isReadable": false, "isWritableWithResponse": false, "isWritableWithoutResponse": false, "serviceID": 10, "serviceUUID": "0000fff0-0000-1000-8000-00805f9b34fb", "uuid": "0000fff5-0000-1000-8000-00805f9b34fb", "value": "qlVCU6HxvlWq"}
-                                }
-                            });
-                        }
-                    });
-
-                    // 根据特征属性筛选特定类型的特征
-                    const readableChars = characteristics.filter(c => c.isReadable);
-                    const notifiableChars = characteristics.filter(c => c.isNotifiable);
-
-                    console.log(`\n可读特征: ${readableChars.length} 个`);
-                    console.log(`可通知特征: ${notifiableChars.length} 个`);
-
-                }
-
-            } catch (error) {
-                console.error('连接设备失败:', error);
-            }
-        };
-
-        // 辅助函数：获取特征属性描述
-        function getCharacteristicProperties(char: Characteristic) {
-            const props = [];
-            if (char.isReadable) props.push('READ');
-            if (char.isWritableWithResponse) props.push('WRITE_WITH_RESPONSE');
-            if (char.isWritableWithoutResponse) props.push('WRITE_WITHOUT_RESPONSE');
-            if (char.isNotifiable) props.push('NOTIFY');
-            if (char.isIndicatable) props.push('INDICATE');
-            return props.join(' | ');
-        }
 
         // 清理扫描的函数
         const cleanupScan = () => {
@@ -361,56 +515,25 @@ export default function MyBle() {
                     title="开关机状态"
                 />
             </View>*/}
-            <View style={styles.header}>
-                <Text style={styles.title}>数组数据管理</Text>
-                <Text style={styles.countText}>当前数组长度: {items.length}</Text>
-            </View>
-            <View style={styles.inputContainer}>
-                <TextInput
-                    style={styles.input}
-                    placeholder="输入要添加的数据..."
-                    value={inputText}
-                    onChangeText={setInputText}
-                    onSubmitEditing={addItem}
-                    returnKeyType="done"
-                />
-                <TouchableOpacity
-                    style={styles.addButton}
-                    onPress={addItem}
-                    disabled={!inputText.trim()}
-                >
-                    <Text style={styles.addButtonText}>添加</Text>
-                </TouchableOpacity>
-            </View>
-            <View >
-                <TouchableOpacity
-                    style={styles.controlButton}
-                    onPress={autoAddItem}
-                >
-                    <Text style={styles.controlButtonText}>手动添加数据</Text>
-                </TouchableOpacity>
 
-                <TouchableOpacity
-                    style={[styles.controlButton, styles.clearButton]}
-                    onPress={clearArray}
-                    disabled={items.length === 0}
-                >
-                    <Text style={styles.controlButtonText}>清空数组</Text>
-                </TouchableOpacity>
-            </View>
             <View style={styles.listContainer}>
-                <Text style={styles.listTitle}>数据列表：</Text>
-                {items.length === 0 ? (
-                    <Text style={styles.emptyText}>暂无数据，等待自动添加或手动输入...</Text>
-                ) : (
-                    <FlatList
-                        data={items}
-                        renderItem={renderItem}
-                        keyExtractor={item => item.UId}
-                        showsVerticalScrollIndicator={true}
-                        contentContainerStyle={styles.listContent}
-                    />
-                )}
+                <FlatList
+                    data={items}
+                    renderItem={({item}) => <Item device={item}/>}
+                    keyExtractor={item => item?.id}
+                />
+            </View>
+            <View style={styles.button}>
+                <Button
+                    onPress={() => onPressLearnMore()}
+                    title="读取参数"
+                />
+            </View>
+            <View style={styles.button}>
+                <Button
+                    onPress={() => onPressWrite()}
+                    title="写工作参数"
+                />
             </View>
         </View>
 
@@ -424,6 +547,8 @@ const styles = StyleSheet.create({
     screen: {
         marginTop: 40,
         marginBottom: 40,
+        flex: 1,
+
     },
     button: {
         marginTop: 20,
@@ -516,7 +641,7 @@ const styles = StyleSheet.create({
         marginBottom: 10,
         borderRadius: 8,
         shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
+        shadowOffset: {width: 0, height: 2},
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 3,
@@ -536,6 +661,14 @@ const styles = StyleSheet.create({
         fontSize: 16,
         marginTop: 50,
     },
+
+    item: {
+        backgroundColor: '#f9c2ff',
+        padding: 20,
+        marginVertical: 8,
+        marginHorizontal: 16,
+    },
+
 });
 
 // 将十六进制字符串转换为 Base64 字符串
@@ -558,12 +691,6 @@ function hexToBase64(hexString: string) {
     return btoa(binaryString);
 }
 
-// 你的数据（去掉空格）
-/*const hexData = 'AA554257A1014A55AA';
-const base64DataToWrite = hexToBase64(hexData);
-console.log('Base64数据:', base64DataToWrite); // 输出应为：qlVCV6EBSpWq*/
-
-
 function base64ToHex(base64: string) {
     // 1. 将Base64字符串解码为二进制字符串
     const binaryString = atob(base64);
@@ -580,8 +707,3 @@ function base64ToHex(base64: string) {
     return hex.toUpperCase(); // 结果: "123456"
     // 或者 return hex.toUpperCase().replace(/(.{2})/g, '$1 ').trim(); // 结果: "12 34 56"
 }
-
-// 使用示例
-const base64Str = 'EjRW';
-const hexResult = base64ToHex(base64Str);
-console.log('使用示例', hexResult); // 输出: 123456

@@ -11,7 +11,7 @@ export default function HomeScreen() {
   return (
       // <VisionCamera></VisionCamera>
 
-      <View style={styles.title_box}>
+      <View style={styles.screen}>
         <Text style={styles.title}>App</Text>
 
          {/*<MyImage></MyImage>*/}
@@ -25,6 +25,12 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    marginTop: 40,
+    marginBottom: 40,
+    flex: 1,
+
+  },
   title_box:{
     marginTop: 40,
     paddingHorizontal: 40,
