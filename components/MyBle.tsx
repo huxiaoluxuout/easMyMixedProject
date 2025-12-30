@@ -1,8 +1,8 @@
-import {useEffect, useState} from 'react';
+import React,{useEffect, useState} from 'react';
 import {PermissionsAndroid, Platform, View, Button, StyleSheet, FlatList, Text, TextInput, TouchableOpacity, Pressable} from 'react-native';
 import {Characteristic, Device} from 'react-native-ble-plx';
 import {bleManager} from '@/hooks/use-ble-manager';
-import {BLEPacketWriter, BLESender, chunkHexToBase64, verifyChunking} from "@/hooks/chunkHexToBase64";
+import { BLESender, chunkHexToBase64, verifyChunking} from "@/hooks/chunkHexToBase64";
 
 // Android动态权限申请
 async function requestAndroidPermissions() {
@@ -164,10 +164,44 @@ export default function MyBle() {
         return props.join(' | ');
     }
 
-    const Item = ({device}) => (
-        /*     onPressIn={() => console.log('按下开始')}
+
+    // 首先，定义一个 Device 的类型接口
+    interface Device {
+        id: string;
+        localName?: string; // 使用 ? 表示可选属性
+    }
+
+// 定义 Item 组件的 Props 类型
+    interface ItemProps {
+        device: Device;
+        // connectToDeviceTo: (device: Device) => void; // 假设这个函数是外部传入的
+    }
+
+    const Item: React.FC<ItemProps> = ({ device }) => {
+        const handlePress = () => {
+            console.log('按下', device.id);
+            connectToDeviceTo(device);
+        };
+
+        return (
+            <Pressable
+                onPress={handlePress}
+                /* 其他事件处理器... */
+            >
+                {({ pressed }) => (
+                    <View style={styles.item}>
+                        <Text style={styles.title}>{device.id}</Text>
+                        <Text style={styles.title}>{device.localName || '未知设备'}</Text>
+                    </View>
+                )}
+            </Pressable>
+        );
+    };
+
+   /* const Item = ({device}) => (
+        /!*     onPressIn={() => console.log('按下开始')}
          onPressOut={() => console.log('按下结束')}
-         onLongPress={() => console.log('长按')}*/
+         onLongPress={() => console.log('长按')}*!/
         <Pressable
             onPress={() => {
                 console.log('按下', device.id)
@@ -181,9 +215,7 @@ export default function MyBle() {
                 </View>
             )}
         </Pressable>
-
-
-    );
+    );*/
 
     const wSend = [
         {
