@@ -1,11 +1,22 @@
-import {View, Button, StyleSheet} from 'react-native';
+import React,{useEffect, useState} from 'react';
+
+import {View, Button, StyleSheet,Text} from 'react-native';
+
+
+
 import BackgroundService from 'react-native-background-actions';
 
 const MyForegroundService = () => {
+
+    const [num, setNum] = useState(1)
+
+
+
     const backgroundTask = async (taskData) => {
         const { delay } = taskData;
         while (BackgroundService.isRunning()) {
             console.log('✅ 后台任务运行中...');
+            setNum((prevState)=>prevState+1)
             await new Promise(resolve => setTimeout(resolve, delay));
         }
     };
@@ -15,8 +26,8 @@ const MyForegroundService = () => {
             taskName: 'MyBackgroundTask',
             taskTitle: '后台服务运行中',
             taskDesc: '点击可返回应用',
-            // taskIcon: { name: 'splashscreen_logo', type: 'drawable' }, // ✅ 明确图标
-            taskIcon: { name: 'ic_notification', type: 'drawable' }, // ✅ 明确图标
+            taskIcon: { name: 'splashscreen_logo', type: 'drawable' }, // ✅ 明确图标
+            // taskIcon: { name: 'ic_notification', type: 'drawable' }, // ✅ 明确图标
             color: '#0000ff',
             channelName: '后台服务',
             channelDescription: '保持应用后台运行',
@@ -42,6 +53,7 @@ const MyForegroundService = () => {
                 title="后台任务运行中"
                 onPress={() => startService()}
             />
+            <Text style={styles.text}>num:{num}</Text>
         </View>
 
     </View>
@@ -59,5 +71,11 @@ const styles = StyleSheet.create({
     button_: {
         marginTop: 20,
         marginBottom: 20,
+    },
+    text:{
+        fontSize:20,
+        color:'red',
+        textAlign:'center',
+        padding:30,
     }
 });

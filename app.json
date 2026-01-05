@@ -39,8 +39,9 @@
           "neverForLocation"
         ]
       },
-      "package": "com.xiaoluxiha.MyMixedProject"
+      "package": "com.feiying.ahjinti.com"
     },
+
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
