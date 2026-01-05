@@ -15,8 +15,9 @@ const MyForegroundService = () => {
             taskName: 'MyBackgroundTask',
             taskTitle: '后台服务运行中',
             taskDesc: '点击可返回应用',
-            taskIcon: { name: 'splashscreen_logo', type: 'drawable' }, // ✅ 明确图标
-            // color: '#0000ff',
+            // taskIcon: { name: 'splashscreen_logo', type: 'drawable' }, // ✅ 明确图标
+            taskIcon: { name: 'ic_notification', type: 'drawable' }, // ✅ 明确图标
+            color: '#0000ff',
             channelName: '后台服务',
             channelDescription: '保持应用后台运行',
             foregroundServiceType: 'dataSync',
