@@ -4,6 +4,8 @@ import MyWifi from "@/components/MyWiFi";
 import MyBle from "@/components/MyBle";
 import MyImage from "@/components/MyImage";
 import VisionCamera from "@/components/VisionCamera";
+import MyDocumentPicker from "@/components/MyDocumentPicker";
+import MyAsyncStorage from "@/components/MyAsyncStorage";
 
 
 export default function HomeScreen() {
@@ -13,10 +15,12 @@ export default function HomeScreen() {
 
       <View style={styles.screen}>
         <Text style={styles.title}>App</Text>
+        <MyAsyncStorage></MyAsyncStorage>
+        {/*<MyDocumentPicker></MyDocumentPicker>*/}
 
          {/*<MyImage></MyImage>*/}
 
-        <MyBle></MyBle>
+        {/*<MyBle></MyBle>*/}
         {/*<MyWifi></MyWifi>*/}
 
 
