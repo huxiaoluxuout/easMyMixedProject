@@ -6,6 +6,7 @@ import MyImage from "@/components/MyImage";
 import VisionCamera from "@/components/VisionCamera";
 import MyDocumentPicker from "@/components/MyDocumentPicker";
 import MyAsyncStorage from "@/components/MyAsyncStorage";
+import MyForegroundService from "@/components/MyForegroundService";
 
 
 export default function HomeScreen() {
@@ -15,7 +16,8 @@ export default function HomeScreen() {
 
       <View style={styles.screen}>
         <Text style={styles.title}>App</Text>
-        <MyAsyncStorage></MyAsyncStorage>
+        {/*<MyAsyncStorage></MyAsyncStorage>*/}
+        <MyForegroundService></MyForegroundService>
         {/*<MyDocumentPicker></MyDocumentPicker>*/}
 
          {/*<MyImage></MyImage>*/}
