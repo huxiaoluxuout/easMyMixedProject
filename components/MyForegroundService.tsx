@@ -5,17 +5,26 @@ import {View, Button, StyleSheet,Text} from 'react-native';
 
 
 import BackgroundService from 'react-native-background-actions';
+import {log} from "@/hooks/logger";
 
 const MyForegroundService = () => {
 
     const [num, setNum] = useState(1)
 
-
+    // log.info("这是一条带时间戳的信息");
+    // log.warn("这是一条带时间戳的警告");
+    // log.error("这是一条带时间戳的错误");
 
     const backgroundTask = async (taskData) => {
         const { delay } = taskData;
         while (BackgroundService.isRunning()) {
-            console.log('✅ 后台任务运行中...');
+          /*  log.info('✅ 后台任务运行中...');
+            log.warn('✅ 后台任务运行中...');*/
+
+            log.debug('这是调试信息');  // 青色
+            log.info('这是信息');       // 亮蓝色
+            log.warn('这是警告');       // 亮黄色
+            log.error('这是错误');      // 亮红色
             setNum((prevState)=>prevState+1)
             await new Promise(resolve => setTimeout(resolve, delay));
         }
