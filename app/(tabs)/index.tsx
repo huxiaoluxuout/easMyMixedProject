@@ -36,19 +36,20 @@ export default function HomeScreen() {
     return (
         // <VisionCamera></VisionCamera>
         <PaperProvider>
-            {/*<View style={styles.screen}>*/}
-            {/*    <Text style={styles.title}>App</Text>*/}
+            <View style={styles.screen}>
+                <Text style={styles.title}>App</Text>
 
-                <MyReactNativePaper></MyReactNativePaper>
-                {/*<View>
+                {/*<MyReactNativePaper></MyReactNativePaper>*/}
+                <View>
                     <Button
                         title="手机型号"
                         onPress={() => printDeviceModel()}
                     />
-                </View>*/}
+                </View>
 
-                {/*<MyAsyncStorage></MyAsyncStorage>*/}
-                {/*<MyForegroundService></MyForegroundService>*/}
+                <MyAsyncStorage></MyAsyncStorage>
+
+                <MyForegroundService></MyForegroundService>
                 {/*<MyDocumentPicker></MyDocumentPicker>*/}
 
                 {/*<MyImage></MyImage>*/}
@@ -57,7 +58,7 @@ export default function HomeScreen() {
                 {/*<MyWifi></MyWifi>*/}
 
 
-            {/*</View>*/}
+            </View>
         </PaperProvider>
     );
 }

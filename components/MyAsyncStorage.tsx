@@ -136,7 +136,7 @@ const MyAsyncStorage = () => {
 
             <View style={styles.button_}>
                 <Button
-                    title="请求网络"
+                    title="请求网络/数据缓存"
                     onPress={() => loadHexContent()}
                 />
             </View>
