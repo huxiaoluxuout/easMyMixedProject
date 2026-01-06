@@ -19,6 +19,17 @@
       "android": {
         "buildType": "app-bundle"
       }
+    },
+
+    "production-splits": {
+      "android": {
+        "buildType": "apk",
+        "env": {
+          "ENABLE_ABI_SPLITS": "true"
+        },
+        "credentialsSource": "local"
+      },
+      "distribution": "internal"
     }
   },
   "submit": {

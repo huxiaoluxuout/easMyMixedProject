@@ -34,14 +34,8 @@
         "android.permission.BLUETOOTH_CONNECT",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
-      "usesPermissionFlags": {
-        "android.permission.BLUETOOTH_SCAN": [
-          "neverForLocation"
-        ]
-      },
       "package": "com.feiying.ahjinti.com"
     },
-
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
@@ -68,7 +62,19 @@
           "isLocationEnabled": true
         }
       ],
-      "react-native-wifi-reborn"
+      "react-native-wifi-reborn",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesPermissionsFlags": {
+              "BLUETOOTH_SCAN": ["neverForLocation"]
+            }
+          }
+        }
+      ],
+
+      "./plugins/withAndroidSplits"
     ],
     "experiments": {
       "typedRoutes": true,
