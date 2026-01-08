@@ -15,6 +15,7 @@ import DeviceInfo from 'react-native-device-info';
 import {Alert, Button, StyleSheet, Text, View,} from 'react-native';
 import MyReactNativePaper from "@/components/MyReactNativePaper";
 
+import MyExpoTaskManager from "@/components/MyExpoTaskManager";
 
 export default function HomeScreen() {
 // 获取并打印设备型号（如 "Redmi Note 13", "iPhone15,2"）
@@ -47,9 +48,12 @@ export default function HomeScreen() {
                     />
                 </View>
 
-                <MyAsyncStorage></MyAsyncStorage>
+                {/*<MyRequestNotification></MyRequestNotification>*/}
+                <MyExpoTaskManager></MyExpoTaskManager>
+                {/*<MyAsyncStorage></MyAsyncStorage>*/}
 
-                <MyForegroundService></MyForegroundService>
+                {/*<MyForegroundService></MyForegroundService>*/}
+                {/*<MyBackgroundFetch></MyBackgroundFetch>*/}
                 {/*<MyDocumentPicker></MyDocumentPicker>*/}
 
                 {/*<MyImage></MyImage>*/}

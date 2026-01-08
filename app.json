@@ -32,7 +32,12 @@
         "android.permission.BLUETOOTH_ADMIN",
         "android.permission.BLUETOOTH_SCAN",
         "android.permission.BLUETOOTH_CONNECT",
-        "android.permission.ACCESS_FINE_LOCATION"
+        "android.permission.ACCESS_FINE_LOCATION",
+
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+
       ],
       "package": "com.feiying.ahjinti.com"
     },
@@ -68,13 +73,21 @@
         {
           "android": {
             "usesPermissionsFlags": {
-              "BLUETOOTH_SCAN": ["neverForLocation"]
+              "BLUETOOTH_SCAN": [
+                "neverForLocation"
+              ]
             }
           }
         }
       ],
+      "./plugins/withAndroidSplits",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+        }
+      ]
 
-      "./plugins/withAndroidSplits"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -85,6 +98,9 @@
       "eas": {
         "projectId": "9ff731d3-3b96-4535-ab52-770519321e4a"
       }
+    },
+    "splash": {
+      "backgroundColor": "#0000ff"
     }
   }
 }
