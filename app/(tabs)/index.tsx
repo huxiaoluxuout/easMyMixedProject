@@ -49,7 +49,7 @@ export default function HomeScreen() {
                 </View>
 
                 {/*<MyRequestNotification></MyRequestNotification>*/}
-                <MyExpoTaskManager></MyExpoTaskManager>
+                {/*<MyExpoTaskManager></MyExpoTaskManager>*/}
                 {/*<MyAsyncStorage></MyAsyncStorage>*/}
 
                 {/*<MyForegroundService></MyForegroundService>*/}
@@ -59,7 +59,7 @@ export default function HomeScreen() {
                 {/*<MyImage></MyImage>*/}
 
                 {/*<MyBle></MyBle>*/}
-                {/*<MyWifi></MyWifi>*/}
+                <MyWifi></MyWifi>
 
 
             </View>
