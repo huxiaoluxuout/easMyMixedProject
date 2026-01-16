@@ -93,17 +93,17 @@ const MyExpoTaskManager = () => {
           ))}
       </View>)*/
      // const [locations, setLocations] = useState<LocationInfo[]>(myLocationHistory);
-     const [num, setNum] = useState(1);
+     // const [num, setNum] = useState(1);
      // let cont = 1;
     // setNum(prevState =>  prevState + 1);
     // cont++
-    log.error('num',num)
+    // log.error('num',num)
     // log.warn('cont',cont)
 
     return (
         <View style={styles.container}>
             <Button onPress={requestPermissions} title="Enable background location"/>
-            <Text>{num}</Text>
+            {/*<Text>{num}</Text>*/}
         </View>
     )
 }
@@ -111,11 +111,13 @@ const MyExpoTaskManager = () => {
 TaskManager.defineTask(LOCATION_TASK_NAME, ({data, error}) => {
     if (error) {
         // Error occurred - check `error.message` for more details.
+        console.log('error',error);
+
         return;
     }
     if (data) {
         const {locations} = data;
-        console.log(locations);
+        console.log('locations',locations);
         // do something with the locations captured in the background
     }
 });
