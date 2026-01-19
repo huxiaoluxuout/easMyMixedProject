@@ -258,22 +258,6 @@ export default function MyWifi(SSID: string) {
 }
 
 const styles = StyleSheet.create({
-    listContainer: {
-        flex: 1,
-        padding: 15,
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: 'red',
-        marginBottom: 10,
-    },
-    item: {
-        backgroundColor: '#f9c2ff',
-        padding: 20,
-        marginVertical: 8,
-        marginHorizontal: 16,
-    },
     screen: {
         marginTop: 40,
         marginBottom: 40,

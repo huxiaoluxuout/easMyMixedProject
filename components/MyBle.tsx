@@ -1,8 +1,19 @@
-import React,{useEffect, useState} from 'react';
-import {PermissionsAndroid, Platform, View, Button, StyleSheet, FlatList, Text, TextInput, TouchableOpacity, Pressable} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {
+    PermissionsAndroid,
+    Platform,
+    View,
+    Button,
+    StyleSheet,
+    FlatList,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    Pressable, Alert
+} from 'react-native';
 import {Characteristic, Device} from 'react-native-ble-plx';
 import {bleManager} from '@/hooks/use-ble-manager';
-import { BLESender, chunkHexToBase64, verifyChunking} from "@/hooks/chunkHexToBase64";
+import {BLESender, chunkHexToBase64, verifyChunking} from "@/hooks/chunkHexToBase64";
 
 // Android动态权限申请
 async function requestAndroidPermissions() {
@@ -50,24 +61,20 @@ async function requestAndroidPermissions() {
 
 // 创建可导出的函数组件
 export default function MyBle() {
-
     const [deviceId, setDeviceId] = useState('')
-    const [items, setItems] = useState([]);
 
-    /*const DATA = [
-        {
-            id: 'bd7acbea-c1b1-46c2-aed5-3ad53abb28ba',
-            title: 'First Item',
-        },
-        {
-            id: '3ac68afc-c605-48d3-a4f8-fbd91aa97f63',
-            title: 'Second Item',
-        },
-        {
-            id: '58694a0f-3da1-471f-bd96-145571e29d72',
-            title: 'Third Item',
-        },
-    ];*/
+    // 使用 Map 来存储设备，Key 是 ID，Value 是 Device 对象
+// 这样做可以自动去重：相同的 ID 会直接覆盖旧数据
+// 1. 只保留 Map 作为唯一真实数据源
+    const [deviceMap, setDeviceMap] = useState<Map<string, Device>>(new Map());
+
+    // 2. 【架构修正】每次渲染时，自动根据 Map 生成最新的 List
+    // 这种写法保证了 List 永远与 Map 同步，且不会有闭包问题
+    // 使用 useMemo 优化性能，防止非必要计算
+    const devicesList = React.useMemo(() => {
+        return Array.from(deviceMap.values());
+    }, [deviceMap]);
+
 
     const connectToDeviceTo = (device: Device) => {
         console.log('device', device)
@@ -81,6 +88,8 @@ export default function MyBle() {
             const connectedDevice = await bleManager.connectToDevice(device.id);
             console.log('设备连接成功:', connectedDevice.name, connectedDevice.id);
             setDeviceId(device.id);
+            bleManager.stopDeviceScan();
+
             // 添加连接状态监听
             connectedDevice.onDisconnected((error, device) => {
                 console.log('设备连接断开', error ? `原因: ${error.message}` : '');
@@ -171,51 +180,6 @@ export default function MyBle() {
         localName?: string; // 使用 ? 表示可选属性
     }
 
-// 定义 Item 组件的 Props 类型
-    interface ItemProps {
-        device: Device;
-        // connectToDeviceTo: (device: Device) => void; // 假设这个函数是外部传入的
-    }
-
-    const Item: React.FC<ItemProps> = ({ device }) => {
-        const handlePress = () => {
-            console.log('按下', device.id);
-            connectToDeviceTo(device);
-        };
-
-        return (
-            <Pressable
-                onPress={handlePress}
-                /* 其他事件处理器... */
-            >
-                {({ pressed }) => (
-                    <View style={styles.item}>
-                        <Text style={styles.title}>{device.id}</Text>
-                        <Text style={styles.title}>{device.localName || '未知设备'}</Text>
-                    </View>
-                )}
-            </Pressable>
-        );
-    };
-
-   /* const Item = ({device}) => (
-        /!*     onPressIn={() => console.log('按下开始')}
-         onPressOut={() => console.log('按下结束')}
-         onLongPress={() => console.log('长按')}*!/
-        <Pressable
-            onPress={() => {
-                console.log('按下', device.id)
-                connectToDeviceTo(device)
-            }}
-        >
-            {({pressed}) => (
-                <View style={styles.item}>
-                    <Text style={styles.title}>{device.id}</Text>
-                    <Text style={styles.title}>{device.localName}</Text>
-                </View>
-            )}
-        </Pressable>
-    );*/
 
     const wSend = [
         {
@@ -249,12 +213,12 @@ export default function MyBle() {
         // const hexData = 'AA554257A1014A55AA';
         // const base64DataToWrite = hexToBase64(hexData);
         // console.log('Base64数据:', base64DataToWrite); // 输出应为：qlVCV6EBSpWq
-       /* bleManager.writeCharacteristicWithResponseForDevice(
-            deviceId,
-            '0000FFF0-0000-1000-8000-00805F9B34FB',
-            '0000FFF2-0000-1000-8000-00805F9B34FB',
-            base64DataToWrite // 传入Base64字符串
-        )*/
+        /* bleManager.writeCharacteristicWithResponseForDevice(
+             deviceId,
+             '0000FFF0-0000-1000-8000-00805F9B34FB',
+             '0000FFF2-0000-1000-8000-00805F9B34FB',
+             base64DataToWrite // 传入Base64字符串
+         )*/
         wSend.forEach(item => {
             const now = new Date();
             const hours = String(now.getHours()).padStart(2, '0');
@@ -265,12 +229,10 @@ export default function MyBle() {
             console.log(`时间：${hours}:${minutes}:${seconds}.${milliseconds}`);
             const base64DataToWrite = hexToBase64(item.hexData);
             // console.log('item.hexData', item.hexData, 'description:', item.description)
-            bleManager.writeCharacteristicWithResponseForDevice( deviceId,
+            bleManager.writeCharacteristicWithResponseForDevice(deviceId,
                 '0000FFF0-0000-1000-8000-00805F9B34FB',
-                '0000FFF2-0000-1000-8000-00805F9B34FB',base64DataToWrite)
+                '0000FFF2-0000-1000-8000-00805F9B34FB', base64DataToWrite)
         })
-
-
 
 
     }
@@ -327,44 +289,44 @@ export default function MyBle() {
                 chunkSize: 20,
                 delayMs: 10,  // 增加延迟确保设备能处理
                 withResponse: true,
-                progressCallback: (current:number, total: number) => {
+                progressCallback: (current: number, total: number) => {
                     const percent = Math.round((current / total) * 100);
                     console.log(`进度: ${percent}% (${current}/${total})`);
                 }
             });
             const base64DataToWrite = hexToBase64(hexData);
-            bleManager.writeCharacteristicWithResponseForDevice( deviceId,
+            bleManager.writeCharacteristicWithResponseForDevice(deviceId,
                 '0000FFF0-0000-1000-8000-00805F9B34FB',
-                '0000FFF2-0000-1000-8000-00805F9B34FB',base64DataToWrite)
+                '0000FFF2-0000-1000-8000-00805F9B34FB', base64DataToWrite)
 
-          /*  const base64DataToWrite = hexToBase64(hexData);
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
+            /*  const base64DataToWrite = hexToBase64(hexData);
+              const now = new Date();
+              const hours = String(now.getHours()).padStart(2, '0');
+              const minutes = String(now.getMinutes()).padStart(2, '0');
+              const seconds = String(now.getSeconds()).padStart(2, '0');
+              const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
 
-            console.log(`时间：${hours}:${minutes}:${seconds}.${milliseconds}`);
-            bleManager.writeCharacteristicWithResponseForDevice( deviceId,
-                '0000FFF0-0000-1000-8000-00805F9B34FB',
-                '0000FFF2-0000-1000-8000-00805F9B34FB',base64DataToWrite)*/
-          /*  return
-            // 先发送一个测试包
-            console.log('发送测试包...');
-            await writer.writeLargeData('AA 55 42 52 AA 45 55 AA', (current, total) => {
-                console.log(`进度: ${Math.round((current / total) * 100)}%`);
-            });
+              console.log(`时间：${hours}:${minutes}:${seconds}.${milliseconds}`);
+              bleManager.writeCharacteristicWithResponseForDevice( deviceId,
+                  '0000FFF0-0000-1000-8000-00805F9B34FB',
+                  '0000FFF2-0000-1000-8000-00805F9B34FB',base64DataToWrite)*/
+            /*  return
+              // 先发送一个测试包
+              console.log('发送测试包...');
+              await writer.writeLargeData('AA 55 42 52 AA 45 55 AA', (current, total) => {
+                  console.log(`进度: ${Math.round((current / total) * 100)}%`);
+              });
 
-            // 等待设备响应
-            await writer.delay(50);
+              // 等待设备响应
+              await writer.delay(50);
 
-            // 发送完整数据
-            console.log('发送完整数据...');
-            await writer.writeLargeData(hexData, (current, total) => {
-                console.log(`进度: ${Math.round((current / total) * 100)}%`);
-            });
+              // 发送完整数据
+              console.log('发送完整数据...');
+              await writer.writeLargeData(hexData, (current, total) => {
+                  console.log(`进度: ${Math.round((current / total) * 100)}%`);
+              });
 
-            console.log('✅ 数据发送完成！');*/
+              console.log('✅ 数据发送完成！');*/
 
         } catch (error) {
             console.error('❌ 发送失败:', error);
@@ -388,7 +350,7 @@ export default function MyBle() {
     /**
      * 请求更大的MTU值
      */
-    async function requestBLEMTU(deviceId:string, requestedMTU = 23) {
+    async function requestBLEMTU(deviceId: string, requestedMTU = 23) {
         console.log(`📡 请求MTU: ${requestedMTU}`);
 
         try {
@@ -406,6 +368,7 @@ export default function MyBle() {
 
         }
     }
+
     // 在组件内部使用useEffect监听蓝牙状态
     useEffect(() => {
         let isScanning = false;
@@ -456,54 +419,30 @@ export default function MyBle() {
                     }
 
                     // 检查设备名称或广播数据，筛选目标设备
-                    const deviceName = scannedDevice.name || '未知设备';
-                    const deviceId = scannedDevice.id || '未知ID';
-                    console.log('发现设备:', deviceName, deviceId);
+                    // const deviceName = scannedDevice.name || '未知设备';
+                    // const deviceId = scannedDevice.id || '未知ID';
+                    // console.log('发现设备:', scannedDevice);
 
-                    const nameList = ['LT5009NEW', 'Scent_320200', 'Scent-01639F'];
-                    // if (scannedDevice.name?.includes('LT5009NEW')) {
-                    if (nameList.includes(scannedDevice?.name as string)) {
-                        // 在这里可以触发连接设备的函数
-                        // connectToDevice(scannedDevice);
-                        setTimeout(() => {
-                            cleanupScan();
-                            // console.log('找到目标设备:', deviceName, deviceId);
-                            // console.log('scannedDevice',scannedDevice)
-                            // @ts-ignore
-                            // setList(scannedDevice)
-                            // setList(prevItems => [scannedDevice, ...prevItems]);
-                            //     scannedDevice.UId=Date.now().toString()
-                            // setItems(prevItems => [...prevItems, scannedDevice]);
-
-                            setItems(prevItems => {
-                                /*// 创建一个 Map，以 ID 为键
-                                const itemsMap = new Map(prevItems.map(item => [item.id, item]));
-
-                                // 添加或更新新设备
-                                itemsMap.set(scannedDevice.id, scannedDevice);
-
-                                // 转换回数组
-                                return Array.from(itemsMap.values());*/
-
-                                // 方法1：使用filter移除相同ID的设备，然后添加新设备
-                                const filteredItems = prevItems.filter(item => item.id !== scannedDevice.id);
-                                prevItems.forEach(item => {
-                                    console.log('xxx-manufacturerData', base64ToHex(item.manufacturerData))
-                                    console.log('yyy-rawScanRecord', base64ToHex(item.rawScanRecord))
-
-                                })
-                                return [...filteredItems, scannedDevice];
-
-                                // 或者方法2：如果已存在则不添加
-                                // const exists = prevItems.some(item => item.id === scannedDevice.id);
-                                // if (exists) return prevItems;
-                                // return [...prevItems, scannedDevice];
-                            });
-                            console.log('找到目标设备:', items);
-
-
-                        }, 5000);
+                    const targetIds = new Set([
+                        '32:02:00:12:10:26',
+                        '00:00:02:9F:63:01',
+                        'B4:01:00:12:10:26',
+                        'F7:37:16:33:5D:F8',
+                        'F0:57:17:33:2F:F7'
+                    ]);
+                    if (!scannedDevice || !scannedDevice.name) {
+                        // 可以在这里加一个简单的过滤，比如只看有名字的设备
+                        return;
                     }
+
+
+                    setDeviceMap(prevMap => {
+                        // 必须创建新 Map 引用，否则 React 认为数据没变不更新
+                        const newMap = new Map(prevMap);
+                        newMap.set(scannedDevice.id, scannedDevice);
+                        return newMap;
+                    });
+
                 });
             } catch (error) {
                 console.error('启动扫描失败:', error);
@@ -551,6 +490,59 @@ export default function MyBle() {
         };
     }, []);
 
+    useEffect(() => {
+        console.log('UI已更新，当前设备列表:', devicesList);
+    }, [devicesList]);
+    // 处理点击事件的函数
+    const onClick = (wifiItem) => {
+        console.log('完整信息:', wifiItem);
+        // 演示：弹窗显示信息
+        Alert.alert(
+            '蓝牙 '+(wifiItem.name||'未知设备'),
+            `你要连接到 "${wifiItem.id}" 吗?\n信号强度: ${wifiItem.rssi} dBm`,
+            [
+                {text: '取消', style: 'cancel'},
+                {
+                    text: '连接',
+                    onPress: () => {
+                        console.log('连接')
+                        connectToDeviceTo(wifiItem)
+                    }
+                }
+            ]
+        );
+    };
+
+    const getSignalColor = (level) => {
+        // if (level > -50) return '#4CAF50'; // Green (Excellent)
+        // if (level > -70) return '#FF9800'; // Orange (Good)
+        return '#F44336';                  // Red (Weak)
+    };
+
+    const renderItem = ({item, index}) => (
+        <TouchableOpacity style={styles.itemContainer}
+                          onPress={() => onClick(item)} // 3. 传入当前 item
+                          activeOpacity={0.6} // 点击时的透明度效果
+        >
+            <View style={styles.leftColumn}>
+                <View style={styles.ssidRow}>
+                    <Text style={styles.index}>{index + 1}.</Text>
+                    <Text style={styles.name}>{item.name || '未知设备'}</Text>
+
+                </View>
+                <Text style={styles.id}>MAC: {item.id}</Text>
+            </View>
+
+            <View style={styles.rightColumn}>
+                <Text style={[styles.signalLevel, {color: getSignalColor(item.level)}]}>
+                    {item.rssi} dBm
+                </Text>
+            </View>
+            <View style={styles.rightColumn}>
+                <Text style={styles.frequency}>{item.manufacturerData}</Text>
+            </View>
+        </TouchableOpacity>
+    );
 
     return (<>
 
@@ -582,13 +574,25 @@ export default function MyBle() {
             </View>*/}
 
             <View style={styles.listContainer}>
+
                 <FlatList
-                    data={items}
-                    renderItem={({item}) => <Item device={item}/>}
-                    keyExtractor={item => item?.id}
+                    data={devicesList}
+                    renderItem={renderItem}
+                    keyExtractor={(item) => item.id}
+                    contentContainerStyle={{padding: 16, paddingBottom: 100}} // 底部留白防止被遮挡
+
+                    // 添加这个属性：当列表为空时显示
+                    ListEmptyComponent={
+                        <View style={{marginTop: 50, alignItems: 'center'}}>
+                            <Text style={{color: '#999'}}>
+                                {devicesList.length === 0 ? "正在扫描设备..." : "暂无数据"}
+                            </Text>
+                            <Text>当前列表长度: {devicesList.length}</Text>
+                        </View>
+                    }
                 />
             </View>
-            <View style={styles.button}>
+            {/*<View style={styles.button}>
                 <Button
                     onPress={() => onPressLearnMore()}
                     title="读取参数"
@@ -605,7 +609,7 @@ export default function MyBle() {
                     onPress={() => setBLEMTU()}
                     title="协商后MTU"
                 />
-            </View>
+            </View>*/}
         </View>
 
     </>);
@@ -614,133 +618,83 @@ export default function MyBle() {
 }
 
 const styles = StyleSheet.create({
-
+    // 1. 最外层容器：必须撑开整个屏幕
     screen: {
+        flex: 1,  // <--- 关键！加上这个，让 screen 占满屏幕高度
         marginTop: 40,
         marginBottom: 40,
-        flex: 1,
-
-    },
-    button: {
-        marginTop: 20,
-        marginBottom: 20,
-    },
-    container: {
-        flex: 1,
-        backgroundColor: '#f5f5f5',
-    },
-    header: {
-        backgroundColor: '#2196F3',
-        padding: 20,
-        alignItems: 'center',
-    },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: 'white',
-        marginBottom: 10,
-    },
-    countText: {
-        fontSize: 16,
-        color: 'white',
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        padding: 15,
-        backgroundColor: 'white',
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
-    },
-    input: {
-        flex: 1,
-        height: 40,
-        borderWidth: 1,
-        borderColor: '#ccc',
-        borderRadius: 5,
-        paddingHorizontal: 10,
-        marginRight: 10,
-    },
-    addButton: {
-        backgroundColor: '#4CAF50',
-        paddingHorizontal: 20,
-        justifyContent: 'center',
-        borderRadius: 5,
-    },
-    addButtonText: {
-        color: 'white',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    controls: {
-        flexDirection: 'row',
-        padding: 15,
-        backgroundColor: 'white',
-        borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
-        justifyContent: 'space-between',
-    },
-    controlButton: {
-        backgroundColor: '#2196F3',
-        paddingHorizontal: 15,
-        paddingVertical: 10,
-        borderRadius: 5,
-    },
-    clearButton: {
-        backgroundColor: '#f44336',
-    },
-    controlButtonText: {
-        color: 'white',
-        fontSize: 14,
-        fontWeight: 'bold',
     },
     listContainer: {
         flex: 1,
         padding: 15,
     },
-    listTitle: {
-        fontSize: 18,
+    title: {
+        fontSize: 24,
         fontWeight: 'bold',
+        color: 'red',
         marginBottom: 10,
-        color: '#333',
     },
-    listContent: {
-        paddingBottom: 20,
-    },
-    itemContainer: {
-        backgroundColor: 'white',
-        padding: 15,
-        marginBottom: 10,
-        borderRadius: 8,
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    itemText: {
-        fontSize: 16,
-        color: '#333',
-        marginBottom: 5,
-    },
-    itemTimestamp: {
-        fontSize: 12,
-        color: '#666',
-    },
-    emptyText: {
-        textAlign: 'center',
-        color: '#666',
-        fontSize: 16,
-        marginTop: 50,
-    },
-
     item: {
         backgroundColor: '#f9c2ff',
         padding: 20,
         marginVertical: 8,
         marginHorizontal: 16,
     },
+    button: {
+        marginTop: 40,
+        // marginBottom: 40,
+    },
+    container: {
+        flex: 1,
+        backgroundColor: '#f5f5f5',
+    },
+    listContent: {
+        padding: 16,
+    },
+
+    ssidText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 4,
+    },
+    signalText: {
+        fontSize: 14,
+        color: '#666',
+    },
+    emptyText: {
+        textAlign: 'center',
+        marginTop: 50,
+        color: '#999',
+    },
+
+    itemContainer: {
+        justifyContent: 'space-between',
+        backgroundColor: '#fff',
+        padding: 16,
+        marginBottom: 8,
+        borderRadius: 8,
+        elevation: 2, // Android shadow
+    },
+    leftColumn: {flex: 1},
+    ssidRow: {flexDirection: 'row', alignItems: 'center', marginBottom: 4},
+    index: {color: '#999', marginRight: 8, fontSize: 12},
+    ssid: {fontSize: 16, fontWeight: 'bold', color: '#333'},
+    tag5g: {
+        backgroundColor: '#E3F2FD',
+        marginLeft: 8,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+    },
+    tagText: {color: '#2196F3', fontSize: 10, fontWeight: 'bold'},
+    bssid: {fontSize: 12, color: '#888'},
+    rightColumn: {alignItems: 'flex-end', minWidth: 70},
+    signalLevel: {fontSize: 16, fontWeight: 'bold'},
+    frequency: {fontSize: 11, color: '#aaa', marginTop: 2},
 
 });
+
 
 // 将十六进制字符串转换为 Base64 字符串
 function hexToBase64(hexString: string) {

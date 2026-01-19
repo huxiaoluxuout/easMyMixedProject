@@ -41,12 +41,12 @@ export default function HomeScreen() {
                 <Text style={styles.title}>App</Text>
 
                 {/*<MyReactNativePaper></MyReactNativePaper>*/}
-                <View>
+             {/*   <View>
                     <Button
                         title="手机型号"
                         onPress={() => printDeviceModel()}
                     />
-                </View>
+                </View>*/}
 
                 {/*<MyRequestNotification></MyRequestNotification>*/}
                 {/*<MyExpoTaskManager></MyExpoTaskManager>*/}
@@ -58,8 +58,8 @@ export default function HomeScreen() {
 
                 {/*<MyImage></MyImage>*/}
 
-                {/*<MyBle></MyBle>*/}
-                <MyWifi></MyWifi>
+                <MyBle></MyBle>
+                {/*<MyWifi></MyWifi>*/}
 
 
             </View>
