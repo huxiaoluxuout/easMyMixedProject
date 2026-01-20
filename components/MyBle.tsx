@@ -62,6 +62,7 @@ async function requestAndroidPermissions() {
 // 创建可导出的函数组件
 export default function MyBle() {
     const [deviceId, setDeviceId] = useState('')
+    const [notifyData, setNotifyData] = useState([])
 
     // 使用 Map 来存储设备，Key 是 ID，Value 是 Device 对象
 // 这样做可以自动去重：相同的 ID 会直接覆盖旧数据
@@ -90,9 +91,25 @@ export default function MyBle() {
             setDeviceId(device.id);
             bleManager.stopDeviceScan();
 
+
             // 添加连接状态监听
             connectedDevice.onDisconnected((error, device) => {
                 console.log('设备连接断开', error ? `原因: ${error.message}` : '');
+                setDeviceId('');
+                Alert.alert(
+                    '蓝牙设备连接断开',
+                    ``,
+                    [
+                        {text: '取消', style: 'cancel'},
+                        {
+                            text: '确定断开',
+                            onPress: () => {
+                                console.log('确定断开')
+
+                            }
+                        }
+                    ]
+                );
             });
             // 可以在这里进行进一步操作，如发现服务/特征等
             const Characteristics = await connectedDevice.discoverAllServicesAndCharacteristics();
@@ -133,16 +150,20 @@ export default function MyBle() {
                             if (error) console.error('监听错误:', error);
                             else {
                                 // console.log('收到通知:', char)
+                                type NotifyDataType = string[];
                                 // @ts-ignore
                                 console.log('十六进制:', base64ToHex(char.value))
-                                const now = new Date();
-                                const hours = String(now.getHours()).padStart(2, '0');
-                                const minutes = String(now.getMinutes()).padStart(2, '0');
-                                const seconds = String(now.getSeconds()).padStart(2, '0');
-                                const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
-                                console.log(`时间: ${hours}:${minutes}:${seconds}.${milliseconds}`);
+                                const newHexValue = base64ToHex(char.value);
 
-                                // 收到通知: {"deviceID": "D6:00:00:11:07:26", "id": 14, "isIndicatable": false, "isNotifiable": true, "isNotifying": true, "isReadable": false, "isWritableWithResponse": false, "isWritableWithoutResponse": false, "serviceID": 10, "serviceUUID": "0000fff0-0000-1000-8000-00805f9b34fb", "uuid": "0000fff5-0000-1000-8000-00805f9b34fb", "value": "qlVCU6HxvlWq"}
+                                // 你的状态更新逻辑
+                                setNotifyData((prev: NotifyDataType) => {
+                                    // 1. 获取当前转换后的新值
+
+                                    return [...prev, newHexValue];
+                                });
+
+
+
                             }
                         });
                     }
@@ -208,129 +229,19 @@ export default function MyBle() {
         }
     ]
 
-    function onPressLearnMore() {
+    function onPressLearnMore(hexData:string) {
         console.log('deviceId', deviceId)
         // const hexData = 'AA554257A1014A55AA';
-        // const base64DataToWrite = hexToBase64(hexData);
-        // console.log('Base64数据:', base64DataToWrite); // 输出应为：qlVCV6EBSpWq
-        /* bleManager.writeCharacteristicWithResponseForDevice(
+        const base64DataToWrite = hexToBase64(hexData);
+        console.log('Base64数据:', base64DataToWrite); // 输出应为：qlVCV6EBSpWq
+         bleManager.writeCharacteristicWithResponseForDevice(
              deviceId,
              '0000FFF0-0000-1000-8000-00805F9B34FB',
              '0000FFF2-0000-1000-8000-00805F9B34FB',
              base64DataToWrite // 传入Base64字符串
-         )*/
-        wSend.forEach(item => {
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
-
-            console.log(`时间：${hours}:${minutes}:${seconds}.${milliseconds}`);
-            const base64DataToWrite = hexToBase64(item.hexData);
-            // console.log('item.hexData', item.hexData, 'description:', item.description)
-            bleManager.writeCharacteristicWithResponseForDevice(deviceId,
-                '0000FFF0-0000-1000-8000-00805F9B34FB',
-                '0000FFF2-0000-1000-8000-00805F9B34FB', base64DataToWrite)
-        })
+         )
 
 
-    }
-
-    // 测试用例
-    async function testChunking(hexData: string) {
-        const testData = hexData;
-
-        console.log('=== 开始测试 ===');
-
-        // 1. 验证数据转换
-        console.log('\n1. 验证数据完整性:');
-        const isValid = verifyChunking(testData, 20);
-        console.log('数据完整性验证:', isValid ? '✅ 通过' : '❌ 失败');
-
-        // 2. 生成分包
-        console.log('\n2. 生成分包数据:');
-        const packets = chunkHexToBase64(testData, 20, false);
-
-        console.log(`\n共 ${packets.length} 个包:`);
-        packets.forEach((packet, index) => {
-            console.log(`包 ${index + 1}: ${packet.substring(0, 30)}...`);
-        });
-
-        // 3. 发送测试
-        console.log('\n3. 发送测试:');
-        return packets;
-    }
-
-
-    /**
-     * 使用示例
-     */
-    async function onPressWrite() {
-        console.log('开始写入工作参数...');
-
-        // 确保设备已连接
-        // 创建发送器
-        const sender = new BLESender(
-            bleManager,
-            deviceId,
-            '0000FFF0-0000-1000-8000-00805F9B34FB',
-            '0000FFF2-0000-1000-8000-00805F9B34FB'
-        );
-        try {
-
-
-            // 你的数据
-            const hexData = 'AA 55 42 57 A8 08 00 16 0A 00 05 00 78 7F 02 00 16 00 00 05 00 A0 73 00 00 00 00 00 05 00 A0 00 00 00 00 00 00 05 00 A0 00 00 00 00 00 00 05 00 A0 00 33 55 AA';
-
-            await testChunking(hexData)
-            // 发送分包数据
-            await sender.sendChunkedData(hexData, {
-                chunkSize: 20,
-                delayMs: 10,  // 增加延迟确保设备能处理
-                withResponse: true,
-                progressCallback: (current: number, total: number) => {
-                    const percent = Math.round((current / total) * 100);
-                    console.log(`进度: ${percent}% (${current}/${total})`);
-                }
-            });
-            const base64DataToWrite = hexToBase64(hexData);
-            bleManager.writeCharacteristicWithResponseForDevice(deviceId,
-                '0000FFF0-0000-1000-8000-00805F9B34FB',
-                '0000FFF2-0000-1000-8000-00805F9B34FB', base64DataToWrite)
-
-            /*  const base64DataToWrite = hexToBase64(hexData);
-              const now = new Date();
-              const hours = String(now.getHours()).padStart(2, '0');
-              const minutes = String(now.getMinutes()).padStart(2, '0');
-              const seconds = String(now.getSeconds()).padStart(2, '0');
-              const milliseconds = String(now.getMilliseconds()).padStart(3, '0');
-
-              console.log(`时间：${hours}:${minutes}:${seconds}.${milliseconds}`);
-              bleManager.writeCharacteristicWithResponseForDevice( deviceId,
-                  '0000FFF0-0000-1000-8000-00805F9B34FB',
-                  '0000FFF2-0000-1000-8000-00805F9B34FB',base64DataToWrite)*/
-            /*  return
-              // 先发送一个测试包
-              console.log('发送测试包...');
-              await writer.writeLargeData('AA 55 42 52 AA 45 55 AA', (current, total) => {
-                  console.log(`进度: ${Math.round((current / total) * 100)}%`);
-              });
-
-              // 等待设备响应
-              await writer.delay(50);
-
-              // 发送完整数据
-              console.log('发送完整数据...');
-              await writer.writeLargeData(hexData, (current, total) => {
-                  console.log(`进度: ${Math.round((current / total) * 100)}%`);
-              });
-
-              console.log('✅ 数据发送完成！');*/
-
-        } catch (error) {
-            console.error('❌ 发送失败:', error);
-        }
     }
 
 
@@ -430,8 +341,13 @@ export default function MyBle() {
                         'F7:37:16:33:5D:F8',
                         'F0:57:17:33:2F:F7'
                     ]);
+
                     if (!scannedDevice || !scannedDevice.name) {
                         // 可以在这里加一个简单的过滤，比如只看有名字的设备
+                        return;
+                    }
+                    if (!targetIds.has(scannedDevice.id)) {
+                        console.log('scannedDevice.id',scannedDevice.name,scannedDevice.id)
                         return;
                     }
 
@@ -491,7 +407,7 @@ export default function MyBle() {
     }, []);
 
     useEffect(() => {
-        console.log('UI已更新，当前设备列表:', devicesList);
+        // console.log('UI已更新，当前设备列表:', devicesList);
     }, [devicesList]);
     // 处理点击事件的函数
     const onClick = (wifiItem) => {
@@ -572,9 +488,17 @@ export default function MyBle() {
                     title="开关机状态"
                 />
             </View>*/}
+            <View style={styles.button}>
+                <Button
+                    onPress={() => onPressLearnMore('AA 55 42 52 AE 41 55 AA')}
+                    title="设备信息"
+                />
+            </View>
+
 
             <View style={styles.listContainer}>
 
+                <Text>deviceId:{deviceId}</Text>
                 <FlatList
                     data={devicesList}
                     renderItem={renderItem}
@@ -591,6 +515,11 @@ export default function MyBle() {
                         </View>
                     }
                 />
+
+
+                <View>
+                    {notifyData.map((item,index)=>(<View key={index} style={styles.item}><Text>{item}</Text></View>))}
+                </View>
             </View>
             {/*<View style={styles.button}>
                 <Button

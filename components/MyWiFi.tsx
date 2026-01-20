@@ -144,7 +144,7 @@ export default function MyWifi(SSID: string) {
             setSelectedWifi(wifiItem);
             setPassword(''); // 清空之前的密码
             setModalVisible(true);
-            handleConnect(wifiItem.BSSID,'BF123456')
+            handleConnect(wifiItem.BSSID,'BF1234567')
 
         }
     };
