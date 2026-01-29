@@ -9,7 +9,8 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
-    Pressable, Alert
+    Pressable, Alert,
+    ScrollView
 } from 'react-native';
 import {Characteristic, Device} from 'react-native-ble-plx';
 import {bleManager} from '@/hooks/use-ble-manager';
@@ -163,7 +164,6 @@ export default function MyBle() {
                                 });
 
 
-
                             }
                         });
                     }
@@ -229,17 +229,17 @@ export default function MyBle() {
         }
     ]
 
-    function onPressLearnMore(hexData:string) {
+    function onPressLearnMore(hexData: string) {
         console.log('deviceId', deviceId)
         // const hexData = 'AA554257A1014A55AA';
         const base64DataToWrite = hexToBase64(hexData);
         console.log('Base64数据:', base64DataToWrite); // 输出应为：qlVCV6EBSpWq
-         bleManager.writeCharacteristicWithResponseForDevice(
-             deviceId,
-             '0000FFF0-0000-1000-8000-00805F9B34FB',
-             '0000FFF2-0000-1000-8000-00805F9B34FB',
-             base64DataToWrite // 传入Base64字符串
-         )
+        bleManager.writeCharacteristicWithResponseForDevice(
+            deviceId,
+            '0000FFF0-0000-1000-8000-00805F9B34FB',
+            '0000FFF2-0000-1000-8000-00805F9B34FB',
+            base64DataToWrite // 传入Base64字符串
+        )
 
 
     }
@@ -347,7 +347,7 @@ export default function MyBle() {
                         return;
                     }
                     if (!targetIds.has(scannedDevice.id)) {
-                        console.log('scannedDevice.id',scannedDevice.name,scannedDevice.id)
+                        console.log('scannedDevice.id', scannedDevice.name, scannedDevice.id)
                         return;
                     }
 
@@ -414,7 +414,7 @@ export default function MyBle() {
         console.log('完整信息:', wifiItem);
         // 演示：弹窗显示信息
         Alert.alert(
-            '蓝牙 '+(wifiItem.name||'未知设备'),
+            '蓝牙 ' + (wifiItem.name || '未知设备'),
             `你要连接到 "${wifiItem.id}" 吗?\n信号强度: ${wifiItem.rssi} dBm`,
             [
                 {text: '取消', style: 'cancel'},
@@ -491,7 +491,7 @@ export default function MyBle() {
             <View style={styles.button}>
                 <Button
                     onPress={() => onPressLearnMore('AA 55 42 52 AE 41 55 AA')}
-                    title="设备信息"
+                    title="读取设备信息"
                 />
             </View>
 
@@ -517,9 +517,10 @@ export default function MyBle() {
                 />
 
 
-                <View>
-                    {notifyData.map((item,index)=>(<View key={index} style={styles.item}><Text>{item}</Text></View>))}
-                </View>
+                <ScrollView style={styles.scrollView}>
+                    {notifyData.map((item, index) => (
+                        <View key={index} style={styles.item}> <Text>{index + 1}: { item}</Text></View>))}
+                </ScrollView>
             </View>
             {/*<View style={styles.button}>
                 <Button
@@ -621,7 +622,7 @@ const styles = StyleSheet.create({
     rightColumn: {alignItems: 'flex-end', minWidth: 70},
     signalLevel: {fontSize: 16, fontWeight: 'bold'},
     frequency: {fontSize: 11, color: '#aaa', marginTop: 2},
-
+    scrollView: {height:300}
 });
 
 
