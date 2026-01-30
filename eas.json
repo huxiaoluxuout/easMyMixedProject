@@ -4,9 +4,20 @@
     "appVersionSource": "remote"
   },
   "build": {
+    "adhoc": {
+      "distribution": "internal",
+      "credentialsSource": "local",
+      "developmentClient": true,
+      "ios": {
+        "provisioningProfile": "latest"
+      }
+    },
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "ios": {
+        "provisioningProfile": "latest"
+      }
     },
     "preview": {
       "distribution": "internal",

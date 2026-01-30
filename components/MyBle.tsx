@@ -518,8 +518,7 @@ export default function MyBle() {
 
 
                 <ScrollView style={styles.scrollView}>
-                    {notifyData.map((item, index) => (
-                        <View key={index} style={styles.item}> <Text>{index + 1}: { item}</Text></View>))}
+                    {notifyData.map((item, index) => (<View key={index} style={styles.item}> <Text>{index + 1}: { item}</Text></View>))}
                 </ScrollView>
             </View>
             {/*<View style={styles.button}>

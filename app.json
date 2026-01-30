@@ -11,8 +11,10 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera"
-      }
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.bf.aromaosapp.ios.com"
     },
     "android": {
       "adaptiveIcon": {
@@ -33,11 +35,10 @@
         "android.permission.BLUETOOTH_SCAN",
         "android.permission.BLUETOOTH_CONNECT",
         "android.permission.ACCESS_FINE_LOCATION",
-
         "ACCESS_BACKGROUND_LOCATION",
         "FOREGROUND_SERVICE",
-        "FOREGROUND_SERVICE_LOCATION"
-
+        "FOREGROUND_SERVICE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION"
       ],
       "package": "com.feiying.ahjinti.com"
     },
@@ -87,7 +88,6 @@
           "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
         }
       ]
-
     ],
     "experiments": {
       "typedRoutes": true,
